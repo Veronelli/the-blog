@@ -1,28 +1,93 @@
-# My Blog
+# my_blog
 
-A personal blog and experimentation platform. The goal is to try out different
-features — from LLM integrations and payment methods to click trackers and
-social media — and publish posts about what is discovered and worth sharing.
+Proyecto de blog construido con **Django 6.1** y gestionado con **uv**.
 
-## Tech Stack
+## Requisitos
 
-- **Python** 3.14
-- **Django** 6.1
-- **Dependency management** via `uv`
-- **Database** SQLite (development default)
+- Python >= 3.14
+- [uv](https://docs.astral.sh/uv/)
 
-## Project Structure
-
-- `the_blog/` — Django project package (`settings.py`, `urls.py`, `wsgi.py`, `asgi.py`).
-- New capabilities are added as isolated Django apps so experiments stay modular.
-
-## Running Locally
+## Instalación
 
 ```bash
+# Crear el entorno virtual e instalar dependencias
 uv sync
-cd the_blog
-python manage.py runserver
 ```
 
-Then visit `http://127.0.0.1:8000/`. The Django admin is available at
-`http://127.0.0.1:8000/admin/`.
+> **Nota:** se recomienda usar `uv run` en lugar de activar el entorno virtual manualmente: es mucho más rápido y no requiere activar nada.
+
+## Puesta en marcha
+
+```bash
+# Aplicar migraciones
+uv run python project/manage.py migrate
+
+# Arrancar el servidor de desarrollo
+uv run python project/manage.py runserver
+```
+
+El servidor estará disponible en <http://127.0.0.1:8000/>.
+
+## Estructura del proyecto
+
+```
+my_blog/
+├── project/              # Proyecto Django
+│   ├── manage.py
+│   └── app/              # Configuración del proyecto (paquete interno)
+│       ├── settings.py
+│       ├── urls.py
+│       ├── asgi.py
+│       └── wsgi.py
+├── pyproject.toml         # Dependencias y metadatos (uv)
+├── uv.lock
+└── main.py                # Punto de entrada alternativo (demo)
+```
+
+## Configuración
+
+Las opciones principales viven en `project/app/settings.py`:
+
+| Clave           | Valor por defecto      | Descripción                                                        |
+|-----------------|------------------------|--------------------------------------------------------------------|
+| `SECRET_KEY`    | `django-insecure-...`  | Clave secreta. **Debe cambiarse en producción.**                   |
+| `DEBUG`         | `True`                 | Modo debug. **Debe ser `False` en producción.**                    |
+| `ALLOWED_HOSTS` | `[]`                   | Hosts permitidos. Añadir los dominios de despliegue en producción. |
+| `DATABASES`     | SQLite (`db.sqlite3`)  | Base de datos por defecto.                                         |
+
+## Scripts útiles
+
+```bash
+# Crear un superusuario para el admin
+uv run python project/manage.py createsuperuser
+
+# Ejecutar checks del proyecto
+uv run python project/manage.py check
+```
+
+## Historial de renombrado
+
+El paquete del proyecto Django cambió de nombre a lo largo del tiempo. Esto explica
+por qué la estructura puede no coincidir con la que generaría `django-admin startproject`:
+
+| Etapa            | Ubicación original            | Ubicación actual   |
+|------------------|-------------------------------|--------------------|
+| Inicial          | `the_blog/the_blog/`          | —                  |
+| Renombrado #1    | `project/the_blog/`           | —                  |
+| Renombrado #2    | `project/project/`            | —                  |
+| Actual           | `project/app/`                | `project/app/`     |
+
+El motivo del cambio fue simplificar y unificar los nombres de la estructura. Tras el
+último renombrado, las referencias internas del módulo apuntan a `app.*`
+(`DJANGO_SETTINGS_MODULE = 'app.settings'`, `ROOT_URLCONF = 'app.urls'`,
+`WSGI_APPLICATION = 'app.wsgi.application'`).
+
+> **Importante:** si se renombra de nuevo el paquete interno, hay que actualizar
+> `DJANGO_SETTINGS_MODULE` en `manage.py`, `asgi.py` y `wsgi.py`, además de
+> `ROOT_URLCONF` y `WSGI_APPLICATION` en `settings.py`.
+
+## Estado actual
+
+- Proyecto Django recién inicializado (solo configuración base).
+- Admin de Django disponible en `/admin/`.
+- Sin aplicaciones propias todavía.
