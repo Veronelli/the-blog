@@ -1,7 +1,7 @@
 [project]
 name = "my-blog"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal experiment blog built with Django - a platform for trying out features and publishing what I discover"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
