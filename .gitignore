@@ -9,5 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
+# Django local database
+db.sqlite3
+
 # SKILLS
 .opencode/skills
