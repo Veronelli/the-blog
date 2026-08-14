@@ -1,14 +1,15 @@
 ## Why
 
-The platform needs a defined, tested path for a Django user to sign in to the
+The platform needs a defined path for a Django user to sign in to the
 administration site and review the posts stored in the database. The existing
-`Post` registration does not document or verify this end-to-end behavior.
+`Post` registration needs explicit validation of its local configuration.
 
 ## What Changes
 
 - Define authenticated access to the Django administration site for staff users.
 - Define how registered `Post` records are presented in the administration list.
-- Add automated coverage for admin authentication and post-list visibility.
+- Validate the project's `Post` administration configuration without duplicating
+  Django framework coverage.
 
 ## Capabilities
 
@@ -22,5 +23,5 @@ administration site and review the posts stored in the database. The existing
 
 ## Impact
 
-- `project/posts/admin.py` and its tests.
+- `project/posts/admin.py`.
 - Django's built-in authentication and admin URLs.
