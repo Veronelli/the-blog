@@ -11,9 +11,8 @@ server, while the design must make later providers straightforward to add.
   implementation class rather than direct provider references.
 - Define a shared base contract for all log-service implementations and enums
   for supported services and log levels.
-- Add a singleton hierarchy: a generic request singleton owns HTTP request
-  behavior, and a higher-level registry singleton maps each service enum to its
-  service singleton.
+- Add a service registry singleton that maps each service enum to its service
+  singleton.
 - Implement the Grafana Loki adapter for a local server using the Loki HTTP
   `POST /loki/api/v1/push` JSON endpoint.
 - Send structured log messages with the timestamp, level, message, labels, and

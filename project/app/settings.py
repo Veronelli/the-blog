@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -126,3 +127,7 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+LOG_TRACKING_SERVICE_CLASS = os.getenv("LOG_TRACKING_SERVICE_CLASS")
+LOG_TRACKING_LOKI_BASE_URL = os.getenv("LOG_TRACKING_LOKI_BASE_URL")
+LOG_TRACKING_LOKI_TOKEN = os.getenv("LOG_TRACKING_LOKI_TOKEN")
