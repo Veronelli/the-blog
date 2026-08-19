@@ -13,11 +13,11 @@
 
 ## 3. Grafana Loki Provider
 
-- [ ] 3.1 Write unit tests with `mocker.patch` for the configured Loki provider using mocked HTTP success, rejection, and transport-failure responses; assert the complete outbound request and prevent network access.
-- [ ] 3.2 Implement the Grafana Loki service using the base contract and `requests` directly.
-- [ ] 3.3 Serialize level, message, labels, flat metadata, and a string Unix-nanosecond timestamp into the Loki `POST /loki/api/v1/push` JSON payload.
+- [x] 3.1 Write unit tests with `mocker.patch` for the configured Loki provider using mocked HTTP success, rejection, and transport-failure responses; assert the complete outbound request and prevent network access.
+- [x] 3.2 Implement the Grafana Loki service using the base contract and `requests` directly.
+- [x] 3.3 Serialize level, message, labels, flat metadata, and a string Unix-nanosecond timestamp into the Loki `POST /loki/api/v1/push` JSON payload.
 
 ## 4. Verification
 
-- [ ] 4.1 Run focused logging tests and `uv run python project/manage.py check`.
-- [ ] 4.2 Verify the unit test suite covers mocked successful, rejected, and transport-failure responses without allowing outbound network requests.
+- [x] 4.1 Run focused logging tests and `uv run python project/manage.py check`.
+- [x] 4.2 Verify the unit test suite covers mocked successful, rejected, and transport-failure responses without allowing outbound network requests.
