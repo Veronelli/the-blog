@@ -1,7 +1,7 @@
 ## 1. Foundation
 
-- [ ] 1.1 Create the `profiles` Django application and register it in project settings.
-- [ ] 1.2 Create test fixtures and factories for users, variables, social network configurations, instances, and public profiles.
+- [x] 1.1 Create the `profiles` Django application and register it in project settings.
+- [x] 1.2 Create test fixtures and factories for users, variables, social network configurations, instances, and public profiles.
 
 ## 2. Reusable variables and instances
 
