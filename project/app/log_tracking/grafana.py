@@ -77,4 +77,3 @@ class GrafanaLokiService(BaseLogService):
             response.raise_for_status()
         except requests.RequestException as error:
             raise LogDeliveryError("Grafana Loki log delivery failed.") from error
-
