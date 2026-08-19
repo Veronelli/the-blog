@@ -1,131 +1,218 @@
+import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models as django_models
-from django.test import TestCase
 
-from profiles.models import Variable, VariableInstance
+from profiles.models import (
+    SocialNetworkConfig,
+    SocialNetworkInstance,
+    Variable,
+    VariableInstance,
+)
 
 
-class VariableInstanceModelTests(TestCase):
-    def setUp(self) -> None:
-        self.variable = Variable.objects.create(
-            identifier="username",
-            label="Username",
-            description="Social network username",
-            regex=r"[A-Za-z0-9_]+",
-        )
-        self.user = self._build_user()
-        self.social_network_instance = self._build_social_network_instance(self.user)
+def _variable(**overrides) -> Variable:
+    defaults = {
+        "identifier": "username",
+        "label": "Username",
+        "description": "Social network username",
+        "regex": r"[A-Za-z0-9_]+",
+    }
+    defaults.update(overrides)
+    return Variable(**defaults)
 
-    def _build_user(self):
-        from django.contrib.auth import get_user_model
 
-        return get_user_model().objects.create_user(
-            username="test-user",
-            password="test-password",
-        )
+def _build_user() -> object:
+    user = get_user_model()(username="test-user")
+    user.id = 1
+    return user
 
-    def _build_social_network_instance(self, user):
-        from profiles.models import SocialNetworkConfig, SocialNetworkInstance
 
-        config = SocialNetworkConfig.objects.create(
-            name="Example",
-            template_url="https://example.test/{username}",
-            icon_url="https://example.test/icon.svg",
-        )
-        config.variables.add(self.variable)
-        return SocialNetworkInstance.objects.create(author=user, config=config)
+def _build_config() -> SocialNetworkConfig:
+    config = SocialNetworkConfig(
+        name="Example",
+        template_url="https://example.test/{username}",
+        icon_url="https://example.test/icon.svg",
+    )
+    config.id = 1
+    return config
 
-    def test_save_valid_value_creates_instance(self) -> None:
-        instance = VariableInstance(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
 
-        instance.full_clean()
+def _build_parent(
+    user: object | None = None,
+    config: SocialNetworkConfig | None = None,
+) -> SocialNetworkInstance:
+    if user is None:
+        user = _build_user()
+    if config is None:
+        config = _build_config()
+    parent = SocialNetworkInstance(author=user, config=config)
+    parent.id = 1
+    return parent
+
+
+def _build_variable_instance(
+    *,
+    value: str = "test_user",
+    variable: Variable | None = None,
+    parent: SocialNetworkInstance | None = None,
+    pk: int | None = None,
+) -> VariableInstance:
+    if variable is None:
+        variable = _variable()
+        variable.id = 1
+    if parent is None:
+        parent = _build_parent()
+    return VariableInstance(
+        pk=pk,
+        social_network_instance=parent,
+        variable=variable,
+        value=value,
+    )
+
+
+def test_owner_returns_parent_social_network_instance_author() -> None:
+    user = _build_user()
+    parent = _build_parent(user=user)
+
+    instance = _build_variable_instance(parent=parent)
+
+    assert instance.owner is user
+
+
+def test_clean_accepts_value_matching_regex_for_new_instance() -> None:
+    instance = _build_variable_instance(value="test_user")
+
+    instance.clean()
+
+
+def test_clean_rejects_value_not_matching_regex_for_new_instance() -> None:
+    instance = _build_variable_instance(value="test user")
+
+    with pytest.raises(ValidationError) as exc_info:
+        instance.clean()
+
+    assert "value" in exc_info.value.message_dict
+
+
+def test_clean_rejects_modification_of_archived_instance(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = True
+
+    instance = _build_variable_instance(pk=1)
+
+    with pytest.raises(ValidationError, match="Archived"):
+        instance.clean()
+
+
+def test_clean_rejects_variable_change(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = False
+    mock_objects.values.return_value.get.return_value = {
+        "variable_id": 999,
+        "social_network_instance_id": 1,
+    }
+
+    instance = _build_variable_instance(pk=1)
+
+    with pytest.raises(ValidationError) as exc_info:
+        instance.clean()
+
+    assert "variable" in exc_info.value.message_dict
+
+
+def test_clean_rejects_parent_change(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = False
+    mock_objects.values.return_value.get.return_value = {
+        "variable_id": 1,
+        "social_network_instance_id": 999,
+    }
+
+    instance = _build_variable_instance(pk=1)
+
+    with pytest.raises(ValidationError) as exc_info:
+        instance.clean()
+
+    assert "social_network_instance" in exc_info.value.message_dict
+
+
+def test_clean_accepts_value_only_change(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = False
+    mock_objects.values.return_value.get.return_value = {
+        "variable_id": 1,
+        "social_network_instance_id": 1,
+    }
+
+    instance = _build_variable_instance(pk=1, value="another_user")
+
+    instance.clean()
+
+
+def test_save_persists_changes(mocker) -> None:
+    mock_save = mocker.patch.object(django_models.Model, "save")
+
+    instance = _build_variable_instance()
+
+    instance.save()
+
+    mock_save.assert_called_once()
+
+
+def test_save_rejects_modification_of_archived_instance(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = True
+
+    instance = _build_variable_instance(pk=1)
+
+    with pytest.raises(ValidationError, match="Archived"):
         instance.save()
 
-        self.assertFalse(instance.archived)
-        self.assertEqual(instance.value, "test_user")
-        self.assertEqual(instance.variable, self.variable)
-        self.assertEqual(
-            instance.social_network_instance, self.social_network_instance
-        )
 
-    def test_save_invalid_value_is_rejected(self) -> None:
-        instance = VariableInstance(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test user",
-        )
+def test_archive_marks_instance_as_archived_and_persists_only_that_field(
+    mocker,
+) -> None:
+    mock_save = mocker.patch.object(django_models.Model, "save")
+    instance = _build_variable_instance()
 
-        with self.assertRaises(ValidationError):
-            instance.full_clean()
+    instance.archive()
 
-    def test_owner_derives_from_parent_social_network_instance(self) -> None:
-        instance = VariableInstance(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
+    assert instance.archived is True
+    mock_save.assert_called_once_with(update_fields=["archived"])
 
-        self.assertEqual(instance.owner, self.user)
 
-    def test_update_value_while_active_keeps_variable_and_parent(self) -> None:
-        instance = VariableInstance.objects.create(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
+def test_archive_does_not_query_database_when_never_persisted(mocker) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_save = mocker.patch.object(django_models.Model, "save")
 
-        instance.value = "another_user"
-        instance.full_clean()
-        instance.save()
+    instance = _build_variable_instance(pk=None)
 
-        instance.refresh_from_db()
-        self.assertEqual(instance.value, "another_user")
-        self.assertEqual(instance.variable, self.variable)
-        self.assertEqual(
-            instance.social_network_instance, self.social_network_instance
-        )
-        self.assertFalse(instance.archived)
+    instance.archive()
 
-    def test_archive_marks_instance_as_archived_without_deleting(self) -> None:
-        instance = VariableInstance.objects.create(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
-        pk = instance.pk
+    mock_objects.values.assert_not_called()
+    mock_save.assert_called_once_with(update_fields=["archived"])
 
-        instance.archive()
-        instance.refresh_from_db()
 
-        self.assertTrue(instance.archived)
-        self.assertTrue(VariableInstance.objects.filter(pk=pk).exists())
+def test_delete_raises_protected_error_when_archived() -> None:
+    instance = _build_variable_instance()
+    instance.archived = True
 
-    def test_cannot_update_value_after_archive(self) -> None:
-        instance = VariableInstance.objects.create(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
-        instance.archive()
+    with pytest.raises(django_models.ProtectedError):
+        instance.delete()
 
-        instance.value = "another_user"
-        with self.assertRaises(ValidationError):
-            instance.full_clean()
 
-    def test_archived_instance_cannot_be_physically_deleted(self) -> None:
-        instance = VariableInstance.objects.create(
-            social_network_instance=self.social_network_instance,
-            variable=self.variable,
-            value="test_user",
-        )
-        instance.archive()
-        pk = instance.pk
+def test_delete_calls_super_when_not_archived(mocker) -> None:
+    mock_super_delete = mocker.patch.object(django_models.Model, "delete")
+    instance = _build_variable_instance()
+    instance.archived = False
 
-        with self.assertRaises(django_models.ProtectedError):
-            instance.delete()
+    instance.delete()
 
-        self.assertTrue(VariableInstance.objects.filter(pk=pk).exists())
+    mock_super_delete.assert_called_once()
+
+
+def test_str_returns_variable_and_value() -> None:
+    instance = _build_variable_instance(value="test_user")
+
+    assert str(instance) == "username=test_user"

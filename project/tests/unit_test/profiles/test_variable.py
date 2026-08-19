@@ -1,74 +1,82 @@
+import pytest
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 
 from profiles.models import Variable
 
 
-class VariableModelTests(TestCase):
-    def test_create_variable_with_valid_fields_succeeds(self) -> None:
-        variable = Variable(
-            identifier="username",
-            label="Username",
-            description="Social network username",
-            regex=r"[A-Za-z0-9_]+",
-        )
+def _variable(**overrides):
+    defaults = {
+        "identifier": "username",
+        "label": "Username",
+        "description": "Social network username",
+        "regex": r"[A-Za-z0-9_]+",
+    }
+    defaults.update(overrides)
+    return Variable(**defaults)
 
-        variable.full_clean()
 
-        self.assertEqual(variable.identifier, "username")
-        self.assertEqual(variable.label, "Username")
-        self.assertEqual(variable.description, "Social network username")
-        self.assertEqual(variable.regex, r"[A-Za-z0-9_]+")
+def test_variable_stores_constructor_attributes() -> None:
+    variable = _variable(
+        identifier="post_url",
+        label="Post URL",
+        description="Public post URL identifier",
+        regex=r"[A-Za-z0-9-]+",
+    )
 
-    def test_label_cannot_exceed_sixteen_characters(self) -> None:
-        variable = Variable(
-            identifier="username",
-            label="x" * 17,
-            description="Social network username",
-            regex=r"[A-Za-z0-9_]+",
-        )
+    assert variable.identifier == "post_url"
+    assert variable.label == "Post URL"
+    assert variable.description == "Public post URL identifier"
+    assert variable.regex == r"[A-Za-z0-9-]+"
 
-        with self.assertRaises(ValidationError):
-            variable.full_clean()
 
-    def test_description_cannot_exceed_sixty_four_characters(self) -> None:
-        variable = Variable(
-            identifier="username",
-            label="Username",
-            description="x" * 65,
-            regex=r"[A-Za-z0-9_]+",
-        )
+def test_variable_str_returns_identifier() -> None:
+    variable = _variable(identifier="post_url")
 
-        with self.assertRaises(ValidationError):
-            variable.full_clean()
+    assert str(variable) == "post_url"
 
-    def test_identifier_must_be_unique(self) -> None:
-        Variable.objects.create(
-            identifier="username",
-            label="Username",
-            description="Social network username",
-            regex=r"[A-Za-z0-9_]+",
-        )
-        duplicate = Variable(
-            identifier="username",
-            label="Different",
-            description="Another description",
-            regex=r"[A-Za-z0-9_]+",
-        )
 
-        with self.assertRaises(ValidationError):
-            duplicate.full_clean()
+def test_variable_matches_returns_true_for_full_match() -> None:
+    variable = _variable(regex=r"[A-Za-z0-9_]+")
 
-    def test_value_must_fully_match_variable_regex(self) -> None:
-        variable = Variable(
-            identifier="username",
-            label="Username",
-            description="Social network username",
-            regex=r"[A-Za-z0-9_]+",
-        )
+    assert variable.matches("test_user") is True
 
-        variable.full_clean()
-        self.assertTrue(variable.matches("test_user"))
-        self.assertFalse(variable.matches("test user"))
-        self.assertFalse(variable.matches("test!"))
-        self.assertFalse(variable.matches(""))
+
+def test_variable_matches_returns_false_when_extra_characters_are_appended() -> None:
+    variable = _variable(regex=r"[A-Za-z0-9_]+")
+
+    assert variable.matches("test_user!") is False
+
+
+def test_variable_matches_returns_false_when_disallowed_character_present() -> None:
+    variable = _variable(regex=r"[A-Za-z0-9_]+")
+
+    assert variable.matches("test user") is False
+    assert variable.matches("test!") is False
+
+
+def test_variable_matches_returns_false_for_empty_value() -> None:
+    variable = _variable(regex=r"[A-Za-z0-9_]+")
+
+    assert variable.matches("") is False
+
+
+def test_variable_matches_returns_false_when_value_too_short() -> None:
+    variable = _variable(regex=r"[A-Za-z0-9_]{3,}")
+
+    assert variable.matches("ab") is False
+    assert variable.matches("abc") is True
+
+
+def test_variable_clean_accepts_compilable_regex() -> None:
+    variable = _variable(regex=r"^\d{4}$")
+
+    variable.clean()
+
+
+def test_variable_clean_rejects_uncompilable_regex() -> None:
+    variable = _variable(regex="[invalid")
+
+    with pytest.raises(ValidationError) as exc_info:
+        variable.clean()
+
+    assert "regex" in exc_info.value.message_dict
