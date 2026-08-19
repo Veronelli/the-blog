@@ -38,7 +38,9 @@ class SocialNetworkConfig(models.Model):
     name = models.CharField(max_length=64, unique=True)
     template_url = models.CharField(max_length=255)
     icon_url = models.CharField(max_length=255)
-    variables = models.ManyToManyField(Variable, related_name="configs")
+    variables: "models.ManyToManyField[Variable, SocialNetworkConfig]" = models.ManyToManyField(
+        Variable, related_name="configs"
+    )
     archived = models.BooleanField(default=False)
 
     class Meta:
