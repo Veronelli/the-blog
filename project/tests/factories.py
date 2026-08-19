@@ -9,7 +9,10 @@ def create_user(**overrides: Any) -> Any:
         "password": "test-password",
     }
     defaults.update(overrides)
-    return get_user_model().objects.create_user(**defaults)
+    password = defaults.pop("password")
+    user = get_user_model()(**defaults)
+    user.set_password(password)
+    return user
 
 
 def create_variable(**overrides: Any) -> Any:
@@ -22,7 +25,7 @@ def create_variable(**overrides: Any) -> Any:
         "regex": r"[A-Za-z0-9_]+",
     }
     defaults.update(overrides)
-    return Variable.objects.create(**defaults)
+    return Variable(**defaults)
 
 
 def create_social_network_config(**overrides: Any) -> Any:
@@ -35,8 +38,8 @@ def create_social_network_config(**overrides: Any) -> Any:
         "icon_url": "https://example.test/icon.svg",
     }
     defaults.update(overrides)
-    config = SocialNetworkConfig.objects.create(**defaults)
-    config.variables.set(variables)
+    config = SocialNetworkConfig(**defaults)
+    config._factory_variables = variables
     return config
 
 
@@ -48,7 +51,7 @@ def create_social_network_instance(**overrides: Any) -> Any:
         "config": create_social_network_config(),
     }
     defaults.update(overrides)
-    return SocialNetworkInstance.objects.create(**defaults)
+    return SocialNetworkInstance(**defaults)
 
 
 def create_variable_instance(**overrides: Any) -> Any:
@@ -60,7 +63,7 @@ def create_variable_instance(**overrides: Any) -> Any:
         "value": "test-user",
     }
     defaults.update(overrides)
-    return VariableInstance.objects.create(**defaults)
+    return VariableInstance(**defaults)
 
 
 def create_public_profile(**overrides: Any) -> Any:
@@ -77,4 +80,4 @@ def create_public_profile(**overrides: Any) -> Any:
         "short_description": "A test profile.",
     }
     defaults.update(overrides)
-    return PublicProfile.objects.create(**defaults)
+    return PublicProfile(**defaults)
