@@ -112,7 +112,7 @@ class VariableInstance(models.Model):
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
             raise models.ProtectedError(
-                "Archived variable instances cannot be deleted.", [self]
+                "Archived variable instances cannot be deleted.", {self}
             )
         return super().delete(*args, **kwargs)
 
@@ -135,11 +135,13 @@ class VariableInstance(models.Model):
         current = VariableInstance.objects.values(
             "variable_id", "social_network_instance_id"
         ).get(pk=self.pk)
-        if current["variable_id"] != self.variable_id:
+        if current["variable_id"] != self.variable.pk:
             raise ValidationError(
                 {"variable": "The variable of an instance cannot change."}
             )
-        if current["social_network_instance_id"] != self.social_network_instance_id:
+        if current["social_network_instance_id"] != getattr(
+            self, "social_network_instance_id"
+        ):
             raise ValidationError(
                 {
                     "social_network_instance": (

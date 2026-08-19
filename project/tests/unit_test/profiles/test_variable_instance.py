@@ -22,9 +22,9 @@ def _variable(**overrides) -> Variable:
     return Variable(**defaults)
 
 
-def _build_user() -> object:
+def _build_user():
     user = get_user_model()(username="test-user")
-    user.id = 1
+    user.id = 1  # type: ignore[attr-defined]
     return user
 
 
@@ -34,12 +34,12 @@ def _build_config() -> SocialNetworkConfig:
         template_url="https://example.test/{username}",
         icon_url="https://example.test/icon.svg",
     )
-    config.id = 1
+    config.id = 1  # type: ignore[attr-defined]
     return config
 
 
 def _build_parent(
-    user: object | None = None,
+    user=None,
     config: SocialNetworkConfig | None = None,
 ) -> SocialNetworkInstance:
     if user is None:
@@ -47,7 +47,7 @@ def _build_parent(
     if config is None:
         config = _build_config()
     parent = SocialNetworkInstance(author=user, config=config)
-    parent.id = 1
+    parent.id = 1  # type: ignore[attr-defined]
     return parent
 
 
@@ -60,7 +60,7 @@ def _build_variable_instance(
 ) -> VariableInstance:
     if variable is None:
         variable = _variable()
-        variable.id = 1
+        variable.id = 1  # type: ignore[attr-defined]
     if parent is None:
         parent = _build_parent()
     return VariableInstance(
@@ -195,7 +195,7 @@ def test_archive_does_not_query_database_when_never_persisted(mocker) -> None:
 
 
 def test_delete_raises_protected_error_when_archived() -> None:
-    instance = _build_variable_instance()
+    instance = _build_variable_instance(pk=1)
     instance.archived = True
 
     with pytest.raises(django_models.ProtectedError):
