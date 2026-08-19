@@ -1,4 +1,9 @@
 from django.db import models
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
 
 # Create your models here.
 class Post(models.Model):
@@ -7,7 +12,7 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    author = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    author = models.ForeignKey["User"]("auth.User", on_delete=models.CASCADE)
     
     def __str__(self) -> str:
         return str(self.title)

@@ -16,3 +16,5 @@ db.sqlite3
 .opencode/skills
 
 .codegraph/
+
+.coverage
