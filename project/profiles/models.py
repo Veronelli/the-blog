@@ -8,7 +8,7 @@ from django.db import models
 
 
 class Variable(models.Model):
-    identifier = models.CharField(max_length=64, unique=True)
+    identifier = models.CharField(max_length=32, unique=True)
     label = models.CharField(max_length=16)
     description = models.CharField(max_length=64)
     regex = models.CharField(max_length=255)
