@@ -4,3 +4,9 @@ import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 django.setup()
+
+
+pytest_plugins = [
+    "tests.unit_test.fixtures.factories",
+    "tests.unit_test.fixtures.admin",
+]
