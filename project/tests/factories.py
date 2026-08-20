@@ -39,7 +39,7 @@ def create_social_network_config(**overrides: Any) -> Any:
     }
     defaults.update(overrides)
     config = SocialNetworkConfig(**defaults)
-    config._factory_variables = variables
+    config._factory_variables = variables  # type: ignore[attr-defined]
     return config
 
 
@@ -67,7 +67,7 @@ def create_variable_instance(**overrides: Any) -> Any:
 
 
 def create_public_profile(**overrides: Any) -> Any:
-    from profiles.models import PublicProfile
+    from profiles.models import PublicProfile  # type: ignore[attr-defined]
 
     defaults = {
         "user": create_user(),

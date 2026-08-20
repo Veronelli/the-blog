@@ -5,11 +5,11 @@
 
 ## 2. Reusable variables and instances
 
-- [ ] 2.1 [RED] Add failing model tests for variable labels, descriptions, regular-expression validation, parent social-network-instance ownership, and archiving.
-- [ ] 2.2 [GREEN] Implement variables and variable instances with model-level validation, parent-derived ownership, and archival behavior.
-- [ ] 2.3 [REFACTOR] Simplify variable validation, parent-derived ownership, and archival handling while preserving the passing model tests.
-- [ ] 2.4 [RED] Add failing admin permission and validation tests for variables.
-- [ ] 2.5 [GREEN] Register variables in Django admin with staff-only management.
+- [x] 2.1 [RED] Add failing model tests for variable labels, descriptions, regular-expression validation, parent social-network-instance ownership, and archiving.
+- [x] 2.2 [GREEN] Implement variables and variable instances with model-level validation, parent-derived ownership, and archival behavior.
+- [x] 2.3 [REFACTOR] Simplify variable validation, parent-derived ownership, and archival handling while preserving the passing model tests.
+- [x] 2.4 [RED] Add failing admin permission and validation tests for variables.
+- [x] 2.5 [GREEN] Register variables in Django admin with staff-only management.
 
 ## 3. Social network configurations and instances
 

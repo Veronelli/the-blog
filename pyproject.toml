@@ -12,11 +12,21 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
+    "pyright>=1.1.411",
 ]
 develop = [
     "pylance>=10.0.0",
+    "pytest>=9.1.1",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["project"]
+addopts = "--import-mode=importlib"
+
+[tool.coverage.run]
+omit = [
+    "project/tests/*",
+    "**/migrations/**"
+]

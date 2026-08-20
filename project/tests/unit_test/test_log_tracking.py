@@ -164,6 +164,10 @@ def test_loki_service_rejects_an_invalid_log_level(mocker: MockFixture):
 
     with override_settings(LOG_TRACKING_LOKI_BASE_URL="https://logs.example.test"):
         with pytest.raises(ValueError, match="LogLevel"):
-            GrafanaLokiService().emit("invalid", "invalid", {"app": "blog"})
+            GrafanaLokiService().emit(
+                "invalid",  # type: ignore[arg-type]
+                "invalid",
+                {"app": "blog"},
+            )
 
     post.assert_not_called()
