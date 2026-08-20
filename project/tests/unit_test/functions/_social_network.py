@@ -30,13 +30,16 @@ def _build_config(**overrides) -> SocialNetworkConfig:
 def _build_parent(
     user=None,
     config: SocialNetworkConfig | None = None,
+    *,
+    pk: int | None = 1,
 ) -> SocialNetworkInstance:
     if user is None:
         user = _build_user()
     if config is None:
         config = _build_config()
     parent = SocialNetworkInstance(author=user, config=config)
-    parent.id = 1  # type: ignore[attr-defined]
+    if pk is not None:
+        parent.id = pk  # type: ignore[attr-defined]
     return parent
 
 
