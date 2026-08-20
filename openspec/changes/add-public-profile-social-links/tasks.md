@@ -13,11 +13,11 @@
 
 ## 3. Social network configurations and instances
 
-- [ ] 3.1 [RED] Add failing model tests for social network configurations, `template_url`, `icon_url`, associated variables, permitted variable instances, immutable authors, archival, and URL construction.
-- [ ] 3.2 [GREEN] Implement social network configurations and user social network instances with validation, immutable author, and archival behavior.
-- [ ] 3.3 [REFACTOR] Simplify configuration, ownership, archival, and URL-building interfaces while preserving the passing model tests.
-- [ ] 3.4 [RED] Add failing admin permission and validation tests for social network configurations.
-- [ ] 3.5 [GREEN] Register social network configurations in Django admin with staff-only management.
+- [x] 3.1 [RED] Add failing model tests for social network configurations, `template_url`, `icon_url`, associated variables, permitted variable instances, immutable authors, archival, and URL construction.
+- [x] 3.2 [GREEN] Implement social network configurations and user social network instances with validation, immutable author, and archival behavior.
+- [x] 3.3 [REFACTOR] Simplify configuration, ownership, archival, and URL-building interfaces while preserving the passing model tests.
+- [x] 3.4 [RED] Add failing admin permission and validation tests for social network configurations.
+- [x] 3.5 [GREEN] Register social network configurations in Django admin with staff-only management.
 
 ## 4. Public profile identity
 
