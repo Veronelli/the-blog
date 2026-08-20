@@ -28,9 +28,9 @@
 
 ## 5. User social network dashboard
 
-- [ ] 5.1 [RED] Add failing dashboard tests for ownership through social network instances, creation, updating active values, archival, immutable network-instance authors, and rejection of unauthorized changes.
-- [ ] 5.2 [GREEN] Implement authenticated dashboard workflows and templates for the current user's profile, social network instances, variable values, and archival actions without physical deletion.
-- [ ] 5.3 [REFACTOR] Simplify dashboard form, ownership, and archival handling while preserving the passing tests.
+- [x] 5.1 [RED] Add failing dashboard tests for ownership through social network instances, creation, updating active values, archival, immutable network-instance authors, and rejection of unauthorized changes.
+- [x] 5.2 [GREEN] Implement authenticated dashboard workflows and templates for the current user's profile, social network instances, variable values, and archival actions without physical deletion.
+- [x] 5.3 [REFACTOR] Simplify dashboard form, ownership, and archival handling while preserving the passing tests.
 
 ## 6. Public presentation
 
