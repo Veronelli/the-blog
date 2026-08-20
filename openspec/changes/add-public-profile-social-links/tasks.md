@@ -21,10 +21,10 @@
 
 ## 4. Public profile identity
 
-- [ ] 4.1 [RED] Add failing model and form tests for public-profile fields, unique `public_username`, optional valid `photo_url`, and validation errors.
-- [ ] 4.2 [GREEN] Implement the public profile model and dashboard form using `public_username` as the public identifier and `photo_url` as an external image URL.
-- [ ] 4.3 [REFACTOR] Simplify profile validation and form handling while preserving the passing tests.
-- [ ] 4.4 Generate and apply the initial migrations for the profiles application.
+- [x] 4.1 [RED] Add failing model and form tests for public-profile fields, unique `public_username`, optional valid `photo_url`, and validation errors.
+- [x] 4.2 [GREEN] Implement the public profile model and dashboard form using `public_username` as the public identifier and `photo_url` as an external image URL.
+- [x] 4.3 [REFACTOR] Simplify profile validation and form handling while preserving the passing tests.
+- [x] 4.4 Generate and apply the initial migrations for the profiles application.
 
 ## 5. User social network dashboard
 
