@@ -1,18 +1,11 @@
 import pytest
-from unittest.mock import MagicMock
 
 from django.contrib import admin
 
 from profiles.admin import VariableAdmin
 from profiles.models import Variable
 
-
-def _request(*, is_staff: bool, has_perm: bool) -> MagicMock:
-    request = MagicMock(name="request")
-    request.user.is_staff = is_staff
-    request.user.is_active = True
-    request.user.has_perm.return_value = has_perm
-    return request
+from tests.unit_test.functions._request import _request
 
 
 @pytest.fixture

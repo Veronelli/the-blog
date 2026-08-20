@@ -1,18 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from profiles.models import Variable
-
-
-def _variable(**overrides):
-    defaults = {
-        "identifier": "username",
-        "label": "Username",
-        "description": "Social network username",
-        "regex": r"[A-Za-z0-9_]+",
-    }
-    defaults.update(overrides)
-    return Variable(**defaults)
+from tests.unit_test.functions._variable import _variable
 
 
 def test_variable_stores_constructor_attributes() -> None:
