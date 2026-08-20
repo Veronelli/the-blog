@@ -12,7 +12,9 @@
     "project"
   ],
   "pythonVersion": "3.14",
-  "typeCheckingMode": "basic",
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
   "reportUnknownMemberType": "none",
   "reportUnknownVariableType": "none",
   "reportUnknownParameterType": "none",

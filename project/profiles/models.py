@@ -112,7 +112,7 @@ class VariableInstance(models.Model):
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
             raise models.ProtectedError(
-                "Archived variable instances cannot be deleted.", {self}
+                "Archived variable instances cannot be deleted.", [self]
             )
         return super().delete(*args, **kwargs)
 

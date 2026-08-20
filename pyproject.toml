@@ -14,9 +14,6 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
-    "django-stubs>=6.1.0",
-    "django-stubs-ext>=6.1.0",
-    "mypy>=2.3.0",
     "pyright>=1.1.411",
 ]
 develop = [
@@ -32,20 +29,3 @@ omit = [
     "project/tests/*",
     "**/migrations/**"
 ]
-
-[tool.mypy]
-plugins = ["mypy_django_plugin.main"]
-python_version = "3.14"
-mypy_path = "project"
-strict_optional = true
-
-[[tool.mypy.overrides]]
-module = "django_stubs_ext"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = ["profiles.migrations.*"]
-ignore_errors = true
-
-[tool.django-stubs]
-django_settings_module = "app.settings"

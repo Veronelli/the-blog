@@ -153,7 +153,7 @@ def test_archive_does_not_query_database_when_never_persisted(mocker) -> None:
 
 
 def test_delete_raises_protected_error_when_archived() -> None:
-    instance = _build_variable_instance(pk=1)
+    instance = _build_variable_instance()
     instance.archived = True
 
     with pytest.raises(django_models.ProtectedError):
