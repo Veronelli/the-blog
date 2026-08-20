@@ -170,6 +170,25 @@ def test_save_rejects_modification_of_archived_instance(mocker) -> None:
         instance.save()
 
 
+def test_save_persists_when_existing_instance_identity_is_preserved(
+    mocker,
+) -> None:
+    mock_objects = mocker.patch.object(VariableInstance, "objects")
+    mock_objects.filter.return_value.values_list.return_value.first.return_value = False
+    mock_objects.values.return_value.get.return_value = {
+        "variable_id": 1,
+        "social_network_instance_id": 1,
+    }
+    mock_super_save = mocker.patch.object(django_models.Model, "save")
+
+    instance = _build_variable_instance(pk=1, value="another_user")
+
+    instance.save()
+
+    mock_objects.values.assert_called_once()
+    mock_super_save.assert_called_once()
+
+
 def test_archive_marks_instance_as_archived_and_persists_only_that_field(
     mocker,
 ) -> None:
