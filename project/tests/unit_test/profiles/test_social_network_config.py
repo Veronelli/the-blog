@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import ValidationError
+from unittest.mock import MagicMock
 
 from profiles.models import SocialNetworkConfig
 
@@ -98,3 +99,13 @@ def test_config_extracts_all_template_placeholders() -> None:
     )
 
     assert sorted(config._template_placeholders()) == ["repo", "username"]
+
+
+def test_associated_variables_delegates_to_m2m_manager(mocker) -> None:
+    config = _build_config()
+    expected = ["var1", "var2"]
+    mock_manager = MagicMock()
+    mock_manager.all.return_value = expected
+    mocker.patch.object(SocialNetworkConfig, "variables", new=mock_manager)
+
+    assert config._associated_variables() == expected
