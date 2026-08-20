@@ -7,6 +7,13 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+_PLACEHOLDER_PATTERN = re.compile(r"\{(\w+)\}")
+
+
+def _extract_placeholders(template_url: str) -> list[str]:
+    return _PLACEHOLDER_PATTERN.findall(template_url or "")
+
+
 class Variable(models.Model):
     identifier = models.CharField(max_length=32, unique=True)
     label = models.CharField(max_length=16)
@@ -49,6 +56,34 @@ class SocialNetworkConfig(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def clean(self) -> None:
+        super().clean()
+        self._validate_template_url_variables()
+
+    def _validate_template_url_variables(self) -> None:
+        placeholders = set(self._template_placeholders())
+        if not placeholders:
+            return
+        variable_identifiers = {
+            variable.identifier for variable in self._associated_variables()
+        }
+        unknown = sorted(placeholders - variable_identifiers)
+        if unknown:
+            raise ValidationError(
+                {
+                    "template_url": (
+                        "Template references variables not associated "
+                        f"with the configuration: {unknown}."
+                    )
+                }
+            )
+
+    def _associated_variables(self) -> "models.QuerySet[Variable, Variable] | list[Variable]":
+        return self.variables.all()
+
+    def _template_placeholders(self) -> list[str]:
+        return _extract_placeholders(self.template_url)
+
 
 class SocialNetworkInstance(models.Model):
     author = models.ForeignKey(
@@ -69,6 +104,102 @@ class SocialNetworkInstance(models.Model):
 
     def __str__(self) -> str:
         return f"{self.config.name} ({self.author})"
+
+    @property
+    def icon_url(self) -> str:
+        return self.config.icon_url
+
+    @property
+    def url(self) -> str | None:
+        placeholders = _extract_placeholders(self.config.template_url)
+        if not placeholders:
+            return self.config.template_url
+        active_values = {
+            instance.variable.identifier: instance.value
+            for instance in self._active_variable_instances()
+        }
+        if any(placeholder not in active_values for placeholder in placeholders):
+            return None
+        return self.config.template_url.format_map(active_values)
+
+    def clean(self) -> None:
+        super().clean()
+        self._ensure_variable_instances_match_config()
+
+    def _active_variable_instances(self) -> Any:
+        return self.variable_instances.filter(archived=False)
+
+    def _iter_variable_instances(self) -> Any:
+        return self.variable_instances.all()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk is not None:
+            state = self._load_state()
+            self._ensure_not_archived(state)
+            self._ensure_author_preserved(state)
+        super().save(*args, **kwargs)
+
+    def archive(self) -> None:
+        self.archived = True
+        self.save(update_fields=["archived"])
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.archived:
+            raise models.ProtectedError(
+                "Archived social network instances cannot be deleted.",
+                [self],
+            )
+        return super().delete(*args, **kwargs)
+
+    def _ensure_variable_instances_match_config(self) -> None:
+        if not self.config_id:
+            return
+        config_variable_identifiers = {
+            variable.identifier for variable in self.config._associated_variables()
+        }
+        for variable_instance in self._iter_variable_instances():
+            if (
+                variable_instance.variable.identifier
+                not in config_variable_identifiers
+            ):
+                raise ValidationError(
+                    {
+                        "variable_instances": (
+                            f"Variable {variable_instance.variable.identifier} "
+                            "is not defined for the configuration of this "
+                            "social network instance."
+                        )
+                    }
+                )
+
+    def _load_state(self) -> dict[str, Any] | None:
+        if not self.pk:
+            return None
+        return (
+            SocialNetworkInstance.objects.filter(pk=self.pk)
+            .values("archived", "author_id")
+            .first()
+        )
+
+    def _ensure_not_archived(self, state: dict[str, Any] | None) -> None:
+        if not state:
+            return
+        if state.get("archived"):
+            raise ValidationError(
+                "Archived social network instances cannot be modified."
+            )
+
+    def _ensure_author_preserved(self, state: dict[str, Any] | None) -> None:
+        if not state:
+            return
+        if state.get("author_id") != self.author_id:
+            raise ValidationError(
+                {
+                    "author": (
+                        "The author of a social network instance cannot change."
+                    )
+                }
+            )
 
 
 class VariableInstance(models.Model):
