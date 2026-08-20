@@ -286,3 +286,25 @@ class VariableInstance(models.Model):
             raise ValidationError(
                 {"value": "Value does not match the variable regex."}
             )
+
+
+class PublicProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="public_profile",
+    )
+    public_username = models.CharField(max_length=64, unique=True)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    title = models.CharField(max_length=150)
+    subtitle = models.CharField(max_length=150)
+    specialty = models.CharField(max_length=150)
+    short_description = models.TextField()
+    photo_url = models.URLField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ("public_username",)
+
+    def __str__(self) -> str:
+        return self.public_username
