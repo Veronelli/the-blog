@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ profile.public_username }}</title>
+</head>
+<body>
+    <h1>{{ profile.public_username }}</h1>
+    {% if profile.photo_url %}
+        <img src="{{ profile.photo_url }}" alt="{{ profile.public_username }}">
+    {% endif %}
+    <h2>{{ profile.first_name }} {{ profile.last_name }}</h2>
+    <p><strong>{{ profile.title }}</strong></p>
+    <p>{{ profile.subtitle }}</p>
+    <p>{{ profile.specialty }}</p>
+    <p>{{ profile.short_description }}</p>
+
+    <h3>Social networks</h3>
+    <ul>
+    {% for entry in instance_urls %}
+        <li>
+            {% if entry.instance.icon_url %}<img src="{{ entry.instance.icon_url }}" alt="">{% endif %}
+            <a href="{{ entry.url }}">{{ entry.instance.config.name }}</a>
+        </li>
+    {% empty %}
+        <li>No social networks linked.</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
