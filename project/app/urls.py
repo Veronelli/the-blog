@@ -25,6 +25,4 @@ urlpatterns = [
 ]
 
 if settings.PRODUCTION:
-    urlpatterns = [
-        path('', include('profiles.urls', namespace='profiles'))
-    ] + urlpatterns
+    urlpatterns = [] + urlpatterns
