@@ -1,0 +1,23 @@
+{
+  "include": [
+    "project"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/migrations",
+    ".venv",
+    "**/.coverage"
+  ],
+  "extraPaths": [
+    "project"
+  ],
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "basic",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportMissingTypeArgument": "none",
+  "useLibraryCodeForTypes": false
+}
