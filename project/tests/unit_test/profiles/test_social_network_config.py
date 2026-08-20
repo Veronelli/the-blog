@@ -98,3 +98,10 @@ def test_config_extracts_all_template_placeholders() -> None:
     )
 
     assert sorted(config._template_placeholders()) == ["repo", "username"]
+
+
+@pytest.mark.django_db
+def test_associated_variables_delegates_to_m2m_manager() -> None:
+    config = _build_config()
+
+    assert list(config._associated_variables()) == []

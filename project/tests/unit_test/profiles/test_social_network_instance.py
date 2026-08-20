@@ -224,3 +224,59 @@ def test_instance_delete_calls_super_when_not_archived(mocker) -> None:
     parent.delete()
 
     mock_super_delete.assert_called_once()
+
+
+def test_instance_clean_skips_config_check_when_config_id_is_none() -> None:
+    parent = _build_parent()
+    parent.config = None
+    parent._iter_variable_instances = MagicMock()  # type: ignore[method-assign]
+
+    parent.clean()
+
+    parent._iter_variable_instances.assert_not_called()
+
+
+def test_load_state_returns_none_when_pk_is_none() -> None:
+    parent = _build_parent(pk=None)
+
+    assert parent._load_state() is None
+
+
+def test_ensure_not_archived_returns_when_state_is_none() -> None:
+    parent = _build_parent(pk=None)
+
+    parent._ensure_not_archived(None)
+
+
+def test_ensure_author_preserved_returns_when_state_is_none() -> None:
+    parent = _build_parent(pk=None)
+
+    parent._ensure_author_preserved(None)
+
+
+@pytest.mark.django_db
+def test_active_variable_instances_returns_empty_when_no_values() -> None:
+    from django.contrib.auth import get_user_model
+
+    config = _build_config(pk=None)
+    config.save()
+    user = get_user_model()(username="test-user")
+    user.save()
+    parent = SocialNetworkInstance(author=user, config=config)
+    parent.save()
+
+    assert list(parent._active_variable_instances()) == []
+
+
+@pytest.mark.django_db
+def test_iter_variable_instances_returns_empty_when_no_values() -> None:
+    from django.contrib.auth import get_user_model
+
+    config = _build_config(pk=None)
+    config.save()
+    user = get_user_model()(username="test-user")
+    user.save()
+    parent = SocialNetworkInstance(author=user, config=config)
+    parent.save()
+
+    assert list(parent._iter_variable_instances()) == []
