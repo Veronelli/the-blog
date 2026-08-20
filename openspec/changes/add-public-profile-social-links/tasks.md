@@ -34,9 +34,9 @@
 
 ## 6. Public presentation
 
-- [ ] 6.1 [RED] Add failing view tests for resolving profiles by `public_username`, rendering public fields and active constructed URLs only, and handling absent profiles.
-- [ ] 6.2 [GREEN] Add URL configuration, public profile view, and template using `public_username`.
-- [ ] 6.3 [REFACTOR] Simplify presentation queries and templates while preserving the passing view tests.
+- [x] 6.1 [RED] Add failing view tests for resolving profiles by `public_username`, rendering public fields and active constructed URLs only, and handling absent profiles.
+- [x] 6.2 [GREEN] Add URL configuration, public profile view, and template using `public_username`.
+- [x] 6.3 [REFACTOR] Simplify presentation queries and templates while preserving the passing view tests.
 
 ## 7. Final verification
 
