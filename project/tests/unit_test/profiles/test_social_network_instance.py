@@ -254,29 +254,25 @@ def test_ensure_author_preserved_returns_when_state_is_none() -> None:
     parent._ensure_author_preserved(None)
 
 
-@pytest.mark.django_db
-def test_active_variable_instances_returns_empty_when_no_values() -> None:
-    from django.contrib.auth import get_user_model
+def test_active_variable_instances_delegates_to_reverse_manager(mocker) -> None:
+    parent = _build_parent(pk=None)
+    expected = ["vi1", "vi2"]
+    mock_manager = MagicMock()
+    mock_manager.filter.return_value = expected
+    mocker.patch.object(
+        SocialNetworkInstance, "variable_instances", new=mock_manager
+    )
 
-    config = _build_config(pk=None)
-    config.save()
-    user = get_user_model()(username="test-user")
-    user.save()
-    parent = SocialNetworkInstance(author=user, config=config)
-    parent.save()
-
-    assert list(parent._active_variable_instances()) == []
+    assert parent._active_variable_instances() == expected
 
 
-@pytest.mark.django_db
-def test_iter_variable_instances_returns_empty_when_no_values() -> None:
-    from django.contrib.auth import get_user_model
+def test_iter_variable_instances_delegates_to_reverse_manager(mocker) -> None:
+    parent = _build_parent(pk=None)
+    expected = ["vi1", "vi2"]
+    mock_manager = MagicMock()
+    mock_manager.all.return_value = expected
+    mocker.patch.object(
+        SocialNetworkInstance, "variable_instances", new=mock_manager
+    )
 
-    config = _build_config(pk=None)
-    config.save()
-    user = get_user_model()(username="test-user")
-    user.save()
-    parent = SocialNetworkInstance(author=user, config=config)
-    parent.save()
-
-    assert list(parent._iter_variable_instances()) == []
+    assert parent._iter_variable_instances() == expected
