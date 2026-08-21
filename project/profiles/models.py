@@ -117,6 +117,7 @@ class SocialNetworkInstance(models.Model):
         active_values = {
             instance.variable.identifier: instance.value
             for instance in self._active_variable_instances()
+            if instance.value
         }
         if any(placeholder not in active_values for placeholder in placeholders):
             return None
