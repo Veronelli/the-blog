@@ -22,25 +22,27 @@
 ## 4. Public profile identity
 
 - [x] 4.1 [RED] Add failing model and form tests for public-profile fields, unique `public_username`, optional valid `photo_url`, and validation errors.
-- [x] 4.2 [GREEN] Implement the public profile model and dashboard form using `public_username` as the public identifier and `photo_url` as an external image URL.
+- [x] 4.2 [GREEN] Implement the public profile model and form using `public_username` as the public identifier and `photo_url` as an external image URL.
 - [x] 4.3 [REFACTOR] Simplify profile validation and form handling while preserving the passing tests.
 - [x] 4.4 Generate and apply the initial migrations for the profiles application.
 
 ## 5. User social network dashboard
 
-- [x] 5.1 [RED] Add failing dashboard tests for ownership through social network instances, creation, updating active values, archival, immutable network-instance authors, and rejection of unauthorized changes.
-- [x] 5.2 [GREEN] Implement authenticated dashboard workflows and templates for the current user's profile, social network instances, variable values, and archival actions without physical deletion.
-- [x] 5.3 [REFACTOR] Simplify dashboard form, ownership, and archival handling while preserving the passing tests.
+> Out of scope: no se implementarán vistas, plantillas ni URLs propias del proyecto. La gestión de instancias queda en el modelo y en Django admin.
+
+- [x] 5.1 Add model-level tests for ownership, creation, updating active values, archival, immutable network-instance authors, and rejection of unauthorized changes.
+- [x] 5.2 Verify that `SocialNetworkInstance` and `VariableInstance` enforce ownership and archival rules without dashboard views.
 
 ## 6. Public presentation
 
-- [x] 6.1 [RED] Add failing view tests for resolving profiles by `public_username`, rendering public fields and active constructed URLs only, and handling absent profiles.
-- [x] 6.2 [GREEN] Add URL configuration, public profile view, and template using `public_username`.
-- [x] 6.3 [REFACTOR] Simplify presentation queries and templates while preserving the passing view tests.
+> Out of scope: no se implementarán vistas, plantillas ni URLs propias para la presentación pública. El perfil público se mantiene como modelo de datos.
+
+- [x] 6.1 Add model and form tests for `PublicProfile` fields, unique `public_username`, optional valid `photo_url`, and validation errors.
+- [x] 6.2 Verify that `PublicProfile` can be persisted and validated without a public view or template.
 
 ## 7. Final verification
 
-- [ ] 7.1 Run the complete profiles test suite and resolve any regressions.
-- [ ] 7.2 Run Django migrations and `uv run python project/manage.py check`.
+- [x] 7.1 Run the complete profiles test suite and resolve any regressions.
+- [x] 7.2 Run Django migrations and `uv run python project/manage.py check`.
 
 For an unplanned task discovered in an implementation child branch, record it as `+=<número>` in that branch's execution tracking without renumbering this approved plan.

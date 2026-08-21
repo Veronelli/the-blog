@@ -1,6 +1,6 @@
 ## Purpose
 
-Define variables reutilizables e instancias validadas para capturar valores consistentes en instancias de redes sociales.
+Define variables reutilizables e instancias validadas para capturar valores consistentes en instancias de redes sociales, manteniendo la lógica en modelos de Django.
 
 ## ADDED Requirements
 
@@ -36,3 +36,7 @@ El sistema SHALL mantener cada instancia de variable como un valor independiente
 #### Scenario: Usuario archiva una instancia de variable propia
 - **WHEN** un usuario archiva una instancia de variable activa que le pertenece
 - **THEN** el sistema conserva el registro como archivado y rechaza cambios o borrado físico posteriores
+
+## OUT OF SCOPE
+
+- Vistas, plantillas o URLs propias del proyecto para gestionar instancias de variables.
