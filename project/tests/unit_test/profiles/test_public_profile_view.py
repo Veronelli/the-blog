@@ -1,189 +1,98 @@
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from django.test import Client
-from django.urls import reverse
+from django.http import Http404, HttpRequest
 
-from profiles.models import PublicProfile, SocialNetworkInstance, VariableInstance
-
-from tests.factories import (
-    create_public_profile,
-    create_social_network_config,
-    create_user,
-    create_variable,
-)
-
-pytestmark = pytest.mark.django_db
+from profiles import views
+from profiles.models import PublicProfile, SocialNetworkInstance
 
 
-@pytest.fixture
-def client() -> Client:
-    return Client()
+def _build_profile() -> MagicMock:
+    profile = MagicMock(spec=PublicProfile)
+    profile.user = MagicMock()
+    profile.public_username = "alice-public"
+    profile.first_name = "Alice"
+    profile.last_name = "Smith"
+    profile.title = "Engineer"
+    profile.subtitle = "Hello world"
+    profile.specialty = "Backend"
+    profile.short_description = "About me."
+    profile.photo_url = "https://example.test/alice.png"
+    return profile
 
 
-@pytest.fixture
-def user():
-    user = create_user(username="alice", password="alice-password")
-    user.set_password("alice-password")
-    user.save()
-    return user
+def _build_instance(*, url: str | None = "https://github.com/octocat") -> MagicMock:
+    instance = MagicMock(spec=SocialNetworkInstance)
+    instance.url = url
+    return instance
 
 
-@pytest.fixture
-def username_variable():
-    variable = create_variable(identifier="username")
-    variable.save()
-    return variable
-
-
-@pytest.fixture
-def github_config(username_variable):
-    config = create_social_network_config(
-        name="GitHub",
-        template_url="https://github.com/{username}",
-        icon_url="https://example.test/github.svg",
-    )
-    config.save()
-    config.variables.add(username_variable)
-    return config
-
-
-@pytest.fixture
-def profile(user):
-    return create_public_profile(
-        user=user,
-        public_username="alice-public",
-        first_name="Alice",
-        last_name="Smith",
-        title="Engineer",
-        subtitle="Hello world",
-        specialty="Backend",
-        short_description="About me.",
-        photo_url="https://example.test/alice.png",
-    ).save() or PublicProfile.objects.get(user=user)
-
-
-def test_public_profile_view_returns_404_for_unknown_username(client) -> None:
-    response = client.get(
-        reverse("profiles:public_profile", kwargs={"public_username": "ghost"})
-    )
-
-    assert response.status_code == 404
-
-
-def test_public_profile_view_renders_200_for_existing_username(client, profile) -> None:
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
-    )
-
-    assert response.status_code == 200
-
-
-def test_public_profile_view_exposes_public_fields(client, profile) -> None:
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
-    )
-
-    context_profile = response.context["profile"]
-    assert context_profile.pk == profile.pk
-    assert context_profile.public_username == "alice-public"
-    assert context_profile.first_name == "Alice"
-    assert context_profile.title == "Engineer"
-
-
-def test_public_profile_view_renders_photo_url_in_context(
-    client, profile
+@patch("profiles.views.render")
+@patch("profiles.views.SocialNetworkInstance.objects.filter")
+@patch("profiles.views.get_object_or_404")
+def test_public_profile_view_renders_profile_and_active_instances(
+    mock_get_object_or_404,
+    mock_filter,
+    mock_render,
 ) -> None:
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
+    profile = _build_profile()
+    mock_get_object_or_404.return_value = profile
+    active_instance = _build_instance()
+    archived_instance = _build_instance(url=None)
+    mock_filter.return_value = [active_instance, archived_instance]
+    request = HttpRequest()
+
+    response = views.public_profile(request, profile.public_username)
+
+    mock_get_object_or_404.assert_called_once_with(
+        PublicProfile, public_username=profile.public_username
     )
+    mock_filter.assert_called_once_with(author=profile.user, archived=False)
+    mock_render.assert_called_once_with(
+        request,
+        "profiles/public_profile.html",
+        {
+            "profile": profile,
+            "instances": [active_instance, archived_instance],
+            "instance_urls": [
+                {"instance": active_instance, "url": active_instance.url}
+            ],
+        },
+    )
+    assert response == mock_render.return_value
 
-    assert response.context["profile"].photo_url == "https://example.test/alice.png"
 
-
-def test_public_profile_view_only_exposes_active_instances(
-    client, profile, user, github_config, username_variable
+@patch("profiles.views.get_object_or_404")
+def test_public_profile_view_propagates_404_for_unknown_username(
+    mock_get_object_or_404,
 ) -> None:
-    active = SocialNetworkInstance.objects.create(author=user, config=github_config)
-    VariableInstance.objects.create(
-        social_network_instance=active,
-        variable=username_variable,
-        value="octocat",
-    )
-    archived = SocialNetworkInstance.objects.create(
-        author=user, config=github_config, archived=True
-    )
-    VariableInstance.objects.create(
-        social_network_instance=archived,
-        variable=username_variable,
-        value="archived-user",
-    )
+    mock_get_object_or_404.side_effect = Http404()
+    request = HttpRequest()
 
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
-    )
-
-    instances = list(response.context["instances"])
-    assert active in instances
-    assert archived not in instances
+    with pytest.raises(Http404):
+        views.public_profile(request, "ghost")
 
 
-def test_public_profile_view_exposes_constructed_urls(
-    client, profile, user, github_config, username_variable
-) -> None:
-    instance = SocialNetworkInstance.objects.create(
-        author=user, config=github_config
-    )
-    VariableInstance.objects.create(
-        social_network_instance=instance,
-        variable=username_variable,
-        value="octocat",
-    )
-
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
-    )
-
-    instance_urls = {
-        item["instance"].pk: item["url"]
-        for item in response.context["instance_urls"]
-    }
-    assert instance_urls[instance.pk] == "https://github.com/octocat"
-
-
+@patch("profiles.views.render")
+@patch("profiles.views.SocialNetworkInstance.objects.filter")
+@patch("profiles.views.get_object_or_404")
 def test_public_profile_view_omits_instances_without_url(
-    client, profile, user, github_config, username_variable
+    mock_get_object_or_404,
+    mock_filter,
+    mock_render,
 ) -> None:
-    instance = SocialNetworkInstance.objects.create(
-        author=user, config=github_config
-    )
-    VariableInstance.objects.create(
-        social_network_instance=instance,
-        variable=username_variable,
-        value="",
-    )
+    profile = _build_profile()
+    mock_get_object_or_404.return_value = profile
+    complete_instance = _build_instance()
+    incomplete_instance = _build_instance(url=None)
+    mock_filter.return_value = [complete_instance, incomplete_instance]
+    request = HttpRequest()
 
-    response = client.get(
-        reverse(
-            "profiles:public_profile",
-            kwargs={"public_username": profile.public_username},
-        )
-    )
+    views.public_profile(request, profile.public_username)
 
-    instance_pks = {item["instance"].pk for item in response.context["instance_urls"]}
-    assert instance.pk not in instance_pks
+    context = mock_render.call_args[0][2]
+    assert context["instance_urls"] == [
+        {"instance": complete_instance, "url": complete_instance.url}
+    ]
