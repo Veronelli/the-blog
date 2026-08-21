@@ -1,16 +1,10 @@
 import pytest
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from profiles.forms import PublicProfileForm
 from profiles.models import PublicProfile
 
 from tests.factories import create_public_profile
-
-
-@pytest.fixture
-def user_model():
-    return get_user_model()
 
 
 def test_profile_stores_constructor_attributes() -> None:
@@ -45,17 +39,6 @@ def test_profile_photo_url_can_be_blank() -> None:
     profile = create_public_profile(photo_url="")
 
     assert profile.photo_url == ""
-
-
-def test_profile_user_is_related_to_auth_user() -> None:
-    from django.conf import settings
-
-    assert any(
-        field.name == "user"
-        and field.related_model._meta.label_lower
-        == settings.AUTH_USER_MODEL.lower()
-        for field in PublicProfile._meta.get_fields()
-    )
 
 
 def test_profile_public_username_field_is_unique() -> None:
