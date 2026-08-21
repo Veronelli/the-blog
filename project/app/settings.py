@@ -24,9 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-=xl7#5@a52axk(5fo9=ne1en$2xw+d#9tqc&&pk3bi+f=(lj=q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
+PRODUCTION = os.getenv("PRODUCTION", "False").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS: list[str] = []
+ALLOWED_HOSTS: list[str] = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
@@ -132,3 +133,6 @@ MAILERS = {
 LOG_TRACKING_SERVICE_CLASS = os.getenv("LOG_TRACKING_SERVICE_CLASS")
 LOG_TRACKING_LOKI_BASE_URL = os.getenv("LOG_TRACKING_LOKI_BASE_URL")
 LOG_TRACKING_LOKI_TOKEN = os.getenv("LOG_TRACKING_LOKI_TOKEN")
+
+
+LOGIN_URL = "/admin/login/"

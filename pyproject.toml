@@ -24,6 +24,7 @@ develop = [
 [tool.pytest.ini_options]
 pythonpath = ["project"]
 addopts = "--import-mode=importlib"
+DJANGO_SETTINGS_MODULE = "app.settings"
 
 [tool.coverage.run]
 omit = [

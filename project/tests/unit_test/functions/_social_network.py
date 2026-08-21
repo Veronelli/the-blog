@@ -1,5 +1,3 @@
-from django.contrib.auth import get_user_model
-
 from profiles.models import (
     SocialNetworkConfig,
     SocialNetworkInstance,
@@ -9,10 +7,17 @@ from profiles.models import (
 from tests.unit_test.functions._variable import _variable
 
 
+class _FakeUser:
+    def __init__(self, username: str = "test-user") -> None:
+        self.id = 1  # type: ignore[attr-defined]
+        self.username = username
+
+    def __str__(self) -> str:
+        return self.username
+
+
 def _build_user():
-    user = get_user_model()(username="test-user")
-    user.id = 1  # type: ignore[attr-defined]
-    return user
+    return _FakeUser()
 
 
 def _build_config(**overrides) -> SocialNetworkConfig:
@@ -37,7 +42,9 @@ def _build_parent(
         user = _build_user()
     if config is None:
         config = _build_config()
-    parent = SocialNetworkInstance(author=user, config=config)
+    parent = SocialNetworkInstance(config=config)
+    parent.author_id = user.id  # type: ignore[attr-defined]
+    parent._state.fields_cache["author"] = user
     if pk is not None:
         parent.id = pk  # type: ignore[attr-defined]
     return parent

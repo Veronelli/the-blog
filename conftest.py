@@ -7,6 +7,5 @@ django.setup()
 
 
 pytest_plugins = [
-    "tests.unit_test.fixtures.factories",
-    "tests.unit_test.fixtures.admin",
+    "tests.unit_test.fixtures.profile",
 ]
