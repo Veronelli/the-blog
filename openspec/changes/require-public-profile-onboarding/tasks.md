@@ -1,9 +1,9 @@
 ## 1. Self-Service Django Admin
 
-- [ ] 1.1 Add a dedicated self-service `AdminSite` that accepts every active authenticated account and routes users without a `PublicProfile` from its index to onboarding.
-- [ ] 1.2 Register only `PublicProfile` in the self-service site and add a readable admin `ModelForm` containing every editable profile field and no authentication-user field.
-- [ ] 1.3 Configure the profile `ModelAdmin` to assign `request.user` on creation, keep ownership read-only on change, and preserve the original association.
-- [ ] 1.4 Restrict the profile `ModelAdmin` queryset and add/change permissions so users can create only their own missing profile and access only their own existing profile.
+- [x] 1.1 Add a dedicated self-service `AdminSite` that accepts every active authenticated account and routes users without a `PublicProfile` from its index to onboarding.
+- [x] 1.2 Register only `PublicProfile` in the self-service site and add a readable admin `ModelForm` containing every editable profile field and no authentication-user field.
+- [x] 1.3 Configure the profile `ModelAdmin` to assign `request.user` on creation, keep ownership read-only on change, and preserve the original association.
+- [x] 1.4 Restrict the profile `ModelAdmin` queryset and add/change permissions so users can create only their own missing profile and access only their own existing profile.
 
 ## 2. Native Admin Routing
 

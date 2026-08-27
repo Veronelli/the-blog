@@ -307,5 +307,26 @@ class PublicProfile(models.Model):
     class Meta:
         ordering = ("public_username",)
 
+    def clean(self) -> None:
+        super().clean()
+        self._ensure_user_preserved()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self._ensure_user_preserved()
+        super().save(*args, **kwargs)
+
+    def _ensure_user_preserved(self) -> None:
+        if not self.pk:
+            return
+        current_user_id = (
+            PublicProfile.objects.filter(pk=self.pk)
+            .values_list("user_id", flat=True)
+            .first()
+        )
+        if current_user_id is not None and current_user_id != self.user_id:
+            raise ValidationError(
+                {"user": "The user of a public profile cannot change."}
+            )
+
     def __str__(self) -> str:
         return self.public_username
