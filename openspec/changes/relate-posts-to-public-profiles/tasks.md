@@ -6,7 +6,7 @@
 
 ## 2. Django Admin
 
-- [ ] 2.1 Update `PostAdmin` to display and select the public-profile author efficiently in the post changelist and form.
+- [x] 2.1 Update `PostAdmin` to display and select the public-profile author efficiently in the post changelist and form.
 
 ## 3. Tests and Validation
 
