@@ -1,6 +1,6 @@
 ## Context
 
-`PublicProfile` is an existing one-to-one extension of the authentication user, while the project currently exposes only the staff-oriented Django admin site. There is no self-service profile route, login endpoint, or dashboard. The new flow must use Django admin's bundled views, templates, styles, and form components without adding project-owned HTML. See `proposal.md` and the two specification deltas for the required behavior.
+`PublicProfile` is an existing one-to-one extension of the authentication user, while the project currently exposes only the staff-oriented Django admin site. There is no self-service profile route, login endpoint, or dashboard. The new flow uses Django admin's bundled views, styles, and form components, with one scoped admin template override for the public-profile form. See `proposal.md` and the two specification deltas for the required behavior.
 
 ## Goals / Non-Goals
 
@@ -12,7 +12,7 @@
 - Apply the profile gate consistently to ordinary, staff, and superuser accounts.
 
 **Non-Goals:**
-- Public presentation pages, project-owned HTML templates, API endpoints, social-link management, or dashboard business features beyond the access boundary.
+- Public presentation pages, arbitrary project-owned HTML templates, API endpoints, social-link management, or dashboard business features beyond the access boundary.
 - Creating profiles automatically or inferring missing public field values.
 - Changing the user model or migrating existing `PublicProfile` records.
 
@@ -20,7 +20,7 @@
 
 ### Use a dedicated self-service AdminSite as the dashboard
 
-The project will add a dedicated `AdminSite` for self-service profile onboarding, separate from Django's existing staff admin site. Its native login view and index will supply the login and dashboard UI without project templates. The site's permission check will accept every active authenticated account, not only staff or superusers. Its index will redirect users without a profile to the native `PublicProfile` add view, while users with a profile receive the normal admin index. Reusing the existing staff admin site was rejected because ordinary authenticated users cannot access it and staff privileges must not bypass the profile requirement.
+The project will add a dedicated `AdminSite` for self-service profile onboarding, separate from Django's existing staff admin site. Its native login view and index will supply the login and dashboard UI. The site's permission check will accept every active authenticated account, not only staff or superusers. A centralized route guard will redirect every authenticated user without a profile from any dashboard route to the native `PublicProfile` add view, except the add view itself and logout. Users with a profile receive the normal admin index. Reusing the existing staff admin site was rejected because ordinary authenticated users cannot access it and staff privileges must not bypass the profile requirement.
 
 ### Restrict the self-service site to the current user's profile
 
@@ -28,7 +28,7 @@ Only `PublicProfile` will be registered in the self-service site. Its `ModelAdmi
 
 ### Reuse a readable admin ModelForm and derive ownership on the server
 
-The `ModelAdmin` will use a dedicated `ModelForm` that lists only editable public-profile fields and omits `user`. Its save hook will set the relationship from `request.user`, and change views will expose that relationship as read-only. The native admin add/change views will render the form, labels, errors, controls, and styles, so no project HTML is needed. Trusting a hidden user identifier or rendering a custom template was rejected because the former is client-tamperable and the latter duplicates Django admin UI.
+The `ModelAdmin` will use a dedicated `ModelForm` that lists only editable public-profile fields and omits `user`. Its save hook will set the relationship from `request.user`, and change views will expose that relationship as read-only. The native admin add/change views render the form, labels, errors, controls, and styles. One `change_form` template override is permitted solely to remove breadcrumbs and the sidebar while retaining the standard top navbar and logout action. Trusting a hidden user identifier was rejected because clients can alter hidden fields; a broader custom template was rejected because it duplicates Django admin UI.
 
 ### Keep the dashboard intentionally minimal
 
@@ -40,15 +40,16 @@ Tests will use Django's test client to exercise the dedicated site's login outco
 
 ## Risks / Trade-offs
 
-- [An existing user has no profile] -> The self-service admin index routes the user to onboarding rather than showing a broken dashboard; no profile is silently fabricated.
+- [An existing user has no profile] -> The centralized dashboard guard routes the user to onboarding rather than showing any dashboard route; no profile is silently fabricated.
 - [A client submits a forged user identifier] -> The admin form does not expose the field and the admin save hook always assigns `request.user`.
 - [A user opens onboarding after completion] -> The self-service permissions deny a second add and direct the user to their existing profile/dashboard.
+- [Global guard redirects the user away from onboarding or logout] -> Explicitly exempt the native add and logout routes from the profile requirement.
 - [An ordinary user sees another profile] -> The `ModelAdmin` queryset and object permissions are restricted to the session user's profile.
 - [The staff site bypasses onboarding] -> The self-service dashboard enforces the gate for every account type; privileged staff administration remains a separate concern.
 
 ## Migration Plan
 
-1. Add the self-service admin site, URL registration, profile admin form, and ownership protections without changing the database schema or adding project HTML.
-2. Deploy and verify that ordinary, staff, and superuser accounts without a profile are redirected to onboarding, then gain dashboard access after valid submission.
+1. Add the self-service admin site, URL registration, global profile guard, profile admin form, limited form-template override, and ownership protections without changing the database schema.
+2. Deploy and verify that ordinary, staff, and superuser accounts without a profile are redirected from every protected dashboard route to onboarding, can still submit the form or log out, then gain dashboard access after valid submission.
 3. Verify existing users with a profile can log in and reach the self-service dashboard immediately.
 4. Roll back application code if needed; existing profile records and user associations remain unchanged because this change has no data migration.

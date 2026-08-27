@@ -7,12 +7,12 @@
 
 ## 2. Native Admin Routing
 
-- [ ] 2.1 Register the self-service admin URLs and use its native login, index, add, and change views as the onboarding and dashboard flow.
-- [ ] 2.2 Verify the flow uses Django admin's bundled templates, styles, form components, and validation errors without adding project-owned HTML templates.
+- [ ] 2.1 Register the self-service admin URLs and use a centralized guard to redirect users without a profile from every dashboard route to onboarding, except the native add and logout routes.
+- [ ] 2.2 Use Django admin's bundled templates, styles, form components, and validation errors; add the limited `PublicProfile` form override that hides breadcrumbs and the sidebar while retaining logout.
 
 ## 3. Flow Verification
 
-- [ ] 3.1 Add request-level tests for unauthenticated access and post-login/index routing for ordinary, staff, and superuser accounts with and without profiles.
-- [ ] 3.2 Add request-level tests that verify valid native-admin onboarding assigns the session user, invalid submissions remain blocked from the dashboard, and submitted user identifiers cannot change ownership.
+- [ ] 3.1 Add request-level tests for unauthenticated access and every protected dashboard route for ordinary, staff, and superuser accounts with and without profiles.
+- [ ] 3.2 Add request-level tests that verify valid native-admin onboarding assigns the session user, invalid submissions remain blocked from the dashboard, submitted user identifiers cannot change ownership, and logout remains available before onboarding.
 - [ ] 3.3 Add request-level tests that verify a user cannot list, view, edit, or create a profile for another user through the self-service site.
 - [ ] 3.4 Run `uv run python project/manage.py test` and `uv run python project/manage.py check`.
