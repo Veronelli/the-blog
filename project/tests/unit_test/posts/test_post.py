@@ -22,3 +22,9 @@ def test_post_keeps_assigned_public_profile_as_author() -> None:
     post = Post(title="A post", content="Content", author=profile)
 
     assert post.author is profile
+
+
+def test_post_string_representation_is_its_title() -> None:
+    post = Post(title="A post", content="Content")
+
+    assert str(post) == "A post"
