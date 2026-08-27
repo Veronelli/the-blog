@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db import models as django_models
 
 from profiles.models import PublicProfile
-from profiles.self_service_admin import (
+from profiles.admin.public_profile import (
     PublicProfileAdmin,
     PublicProfileForm,
     SelfServiceAdminSite,
@@ -147,7 +147,7 @@ def test_self_service_site_index_redirects_user_without_profile(mocker) -> None:
     response = mocker.MagicMock()
     mocker.patch.object(PublicProfile, "objects")
     redirect_mock = mocker.patch(
-        "profiles.self_service_admin.redirect", return_value=response
+        "profiles.admin.public_profile.redirect", return_value=response
     )
     PublicProfile.objects.filter.return_value.exists.return_value = False
 
