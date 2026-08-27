@@ -28,7 +28,7 @@ Only `PublicProfile` will be registered in the self-service site. Its `ModelAdmi
 
 ### Reuse a readable admin ModelForm and derive ownership on the server
 
-The `ModelAdmin` will use a dedicated `ModelForm` that lists only editable public-profile fields and omits `user`. Its save hook will set the relationship from `request.user`, and change views will expose that relationship as read-only. The native admin add/change views render the form, labels, errors, controls, and styles. One `change_form` template override is permitted solely to remove breadcrumbs and the sidebar while retaining the standard top navbar and logout action. Trusting a hidden user identifier was rejected because clients can alter hidden fields; a broader custom template was rejected because it duplicates Django admin UI.
+The `ModelAdmin` will use a dedicated `ModelForm` that lists only editable public-profile fields and omits `user`. The admin will inject `request.user` when it creates the form so the form can initialize `public_username`, `first_name`, and `last_name` from the authentication account; these are editable defaults, not ownership inputs. Its save hook will set the relationship from `request.user`, and change views will expose that relationship as read-only. The native admin add/change views render the form, labels, errors, controls, and styles. One `change_form` template override is permitted solely to remove breadcrumbs and the sidebar while retaining the standard top navbar and logout action. Trusting a hidden user identifier was rejected because clients can alter hidden fields; a broader custom template was rejected because it duplicates Django admin UI.
 
 ### Keep the dashboard intentionally minimal
 

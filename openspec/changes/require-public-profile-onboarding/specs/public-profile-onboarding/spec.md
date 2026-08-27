@@ -24,7 +24,7 @@ El sistema SHALL dirigir a toda cuenta autenticada que no tenga un perfil públi
 - **THEN** el sistema lo dirige al formulario de creación de su propio perfil público
 
 ### Requirement: Formulario de creación vinculado a la sesión
-El sistema SHALL mostrar a los usuarios autenticados sin perfil público un formulario para proporcionar los datos obligatorios de su perfil mediante la interfaz y los componentes nativos de Django admin. El sistema MAY usar un único override de template de Django admin, limitado al formulario de `PublicProfile`, para ocultar la navegación de breadcrumbs y la barra lateral. El formulario MUST no permitir seleccionar ni proporcionar un usuario de autenticación; el perfil creado MUST asociarse al usuario autenticado de la sesión.
+El sistema SHALL mostrar a los usuarios autenticados sin perfil público un formulario para proporcionar los datos obligatorios de su perfil mediante la interfaz y los componentes nativos de Django admin. El formulario SHALL inicializar `public_username`, `first_name` y `last_name` con los valores de la cuenta autenticada cuando estos estén disponibles, permitiendo al usuario modificar esos valores antes de guardar. El sistema MAY usar un único override de template de Django admin, limitado al formulario de `PublicProfile`, para ocultar la navegación de breadcrumbs y la barra lateral. El formulario MUST no permitir seleccionar ni proporcionar un usuario de autenticación; el perfil creado MUST asociarse al usuario autenticado de la sesión.
 
 #### Scenario: Usuario crea su propio perfil
 - **WHEN** un usuario autenticado sin perfil envía datos de perfil válidos
@@ -33,6 +33,10 @@ El sistema SHALL mostrar a los usuarios autenticados sin perfil público un form
 #### Scenario: Formulario no expone selección de usuario
 - **WHEN** un usuario autenticado visualiza el formulario de creación de perfil
 - **THEN** el formulario no muestra un selector ni un campo editable para el usuario de autenticación
+
+#### Scenario: Formulario prellena datos de la cuenta autenticada
+- **WHEN** un usuario autenticado abre el formulario de creación de perfil y su cuenta tiene nombre de usuario, nombre o apellido
+- **THEN** el formulario inicializa `public_username`, `first_name` y `last_name` con esos datos sin cambiar la asociación de usuario del perfil
 
 #### Scenario: Formulario usa componentes nativos de Django admin
 - **WHEN** un usuario autenticado sin perfil abre el formulario de creación
