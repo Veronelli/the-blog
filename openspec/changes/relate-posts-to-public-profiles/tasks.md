@@ -1,7 +1,7 @@
 ## 1. Post Author Model and Migration
 
-- [ ] 1.1 Change `Post.author` to a required foreign key to `PublicProfile` with a reverse relation for that profile's posts.
-- [ ] 1.2 Create a staged, atomic migration that preflights public-profile coverage, maps existing post authors, replaces the user relationship, and supports reverse mapping to users.
+- [x] 1.1 Change `Post.author` to a required foreign key to `PublicProfile` with a reverse relation for that profile's posts.
+- [x] 1.2 Create a staged, atomic migration that preflights public-profile coverage, maps existing post authors, replaces the user relationship, and supports reverse mapping to users.
 - [ ] 1.3 Verify migrations apply successfully when every existing post author has a public profile and fail descriptively without changing posts when one is missing.
 
 ## 2. Django Admin
