@@ -6,6 +6,14 @@ from profiles.models import PublicProfile
 
 
 class PublicProfileForm(forms.ModelForm):
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        if user is not None and not self.instance.pk:
+            self.fields["public_username"].initial = user.username
+            self.fields["first_name"].initial = user.first_name
+            self.fields["last_name"].initial = user.last_name
+
     class Meta:
         model = PublicProfile
         fields = (
@@ -26,26 +34,36 @@ class PublicProfileAdmin(admin.ModelAdmin):
     add_form_template = "admin/profiles/publicprofile/change_form.html"
     change_form_template = "admin/profiles/publicprofile/change_form.html"
 
+    def get_form(self, request: HttpRequest, obj=None, **kwargs):
+        form_class = super().get_form(request, obj, **kwargs)
+
+        class BoundPublicProfileForm(form_class):
+            def __init__(inner_self, *args, **inner_kwargs):
+                inner_kwargs["user"] = request.user
+                super().__init__(*args, **inner_kwargs)
+
+        return BoundPublicProfileForm
+
     def get_queryset(self, request: HttpRequest):
-        if not request.user.is_authenticated:
+        if request is None or not request.user.is_authenticated:
             return super().get_queryset(request).none()
         return super().get_queryset(request).filter(user_id=request.user.id)
 
     def has_module_permission(self, request: HttpRequest) -> bool:
-        user = request.user
-        return user.is_authenticated and user.is_staff
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated and user.is_staff)
 
     def has_add_permission(self, request: HttpRequest) -> bool:
-        user = request.user
-        if not user.is_authenticated or not user.is_staff:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or not user.is_staff:
             return False
         return not PublicProfile.objects.filter(user_id=user.id).exists()
 
     def has_change_permission(
         self, request: HttpRequest, obj: PublicProfile | None = None
     ) -> bool:
-        user = request.user
-        if not user.is_authenticated or not user.is_staff:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or not user.is_staff:
             return False
         if obj is None:
             return PublicProfile.objects.filter(user_id=user.id).exists()
