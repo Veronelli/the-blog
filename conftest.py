@@ -8,4 +8,5 @@ django.setup()
 
 pytest_plugins = [
     "tests.unit_test.fixtures.profile",
+    "tests.unit_test.fixtures.onboarding",
 ]

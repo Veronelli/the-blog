@@ -7,33 +7,10 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db import models as django_models
 
-from profiles.models import PublicProfile
 from profiles.admin.public_profile import PublicProfileAdmin, PublicProfileForm
-
-
-def _request(
-    user_id: int = 1,
-    *,
-    is_active: bool = True,
-    is_authenticated: bool = True,
-    is_staff: bool = True,
-    username: str = "test-user",
-):
-    return SimpleNamespace(
-        user=SimpleNamespace(
-            id=user_id,
-            pk=user_id,
-            username=username,
-            is_active=is_active,
-            is_authenticated=is_authenticated,
-            is_staff=is_staff,
-        )
-    )
-
-
-@pytest.fixture
-def public_profile_admin() -> PublicProfileAdmin:
-    return PublicProfileAdmin(PublicProfile, admin.site)
+from profiles.models import PublicProfile
+from tests.factories import create_user
+from tests.unit_test.functions._request import _request
 
 
 def test_public_profile_form_omits_user_field() -> None:
@@ -86,7 +63,8 @@ def test_public_profile_admin_denies_add_for_non_staff(
 ) -> None:
     assert public_profile_admin.has_add_permission(_request(is_staff=False)) is False
     assert (
-        public_profile_admin.has_add_permission(_request(is_authenticated=False)) is False
+        public_profile_admin.has_add_permission(_request(is_authenticated=False))
+        is False
     )
     assert public_profile_admin.has_add_permission(None) is False
 
@@ -161,10 +139,8 @@ def test_public_profile_admin_filters_queryset_to_request_user(
 def test_public_profile_admin_assigns_request_user_when_creating(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    from django.contrib.auth import get_user_model
-
-    user = get_user_model()(pk=1, username="profile-owner")
-    request = SimpleNamespace(user=user)
+    user = create_user(pk=1, username="profile-owner")
+    request = _request(user=user)
     profile = PublicProfile()
     form = mocker.MagicMock(spec=forms.ModelForm)
     mocker.patch.object(django_models.Model, "save")
@@ -175,10 +151,8 @@ def test_public_profile_admin_assigns_request_user_when_creating(
 
 
 def test_public_profile_rejects_user_reassignment(mocker) -> None:
-    from django.contrib.auth import get_user_model
-
-    original = get_user_model()(pk=1)
-    other = get_user_model()(pk=2)
+    original = create_user(pk=1)
+    other = create_user(pk=2)
     profile = PublicProfile(pk=1, user=original)
     profile.user = other
 
