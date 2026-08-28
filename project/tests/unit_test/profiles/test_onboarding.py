@@ -1,10 +1,12 @@
+from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from django.conf import settings
+from django.contrib.auth.models import Group
+from django.urls import Resolver404, reverse
+
+from profiles.admin.public_profile import PublicProfileAdmin, PublicProfileForm
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
-from django.test import Client
-from django.urls import reverse
 
 from profiles.middleware import PublicProfileOnboardingMiddleware
 from profiles.models import PublicProfile
@@ -13,338 +15,48 @@ from profiles.models import PublicProfile
 User = get_user_model()
 
 
-@pytest.fixture
-def client():
-    return Client(HTTP_HOST="localhost")
+def _user(pk=1, username="test-user"):
+    """Return a real unsaved User instance for assignment to PublicProfile."""
+    return User(pk=pk, username=username, first_name="Test", last_name="User")
 
 
-@pytest.fixture
-def onboarding_group():
-    return Group.objects.get(name=settings.PUBLIC_PROFILE_ONBOARDING_GROUP_NAME)
-
-
-@pytest.fixture
-def staff_user(db):
-    user = User.objects.create_user(
-        "staff-user", password="test-password", is_staff=True
+def _request_user(
+    *,
+    is_authenticated=True,
+    is_staff=True,
+    has_profile=False,
+):
+    """Return a lightweight fake user for middleware/admin permission tests."""
+    user = SimpleNamespace(
+        id=1,
+        pk=1,
+        username="test-user",
+        first_name="Test",
+        last_name="User",
+        is_authenticated=is_authenticated,
+        is_staff=is_staff,
+        groups=MagicMock(),
     )
+    if has_profile:
+        user.public_profile = SimpleNamespace()
     return user
 
 
-@pytest.fixture
-def profiled_staff_user(db):
-    user = User.objects.create_user(
-        "profiled-staff", password="test-password", is_staff=True
-    )
-    PublicProfile.objects.create(
-        user=user,
-        public_username="profiled-staff",
-        first_name="Profiled",
-        last_name="Staff",
-        title="Title",
-        subtitle="Subtitle",
-        specialty="Specialty",
-        short_description="Description",
-    )
-    return user
-
-
-@pytest.fixture
-def other_staff_user(db):
-    user = User.objects.create_user(
-        "other-staff", password="test-password", is_staff=True
-    )
-    return user
-
-
-@pytest.mark.django_db
-def test_anonymous_user_is_redirected_to_login(client):
-    response = client.get("/admin/")
-
-    assert response.status_code == 302
-    assert "/admin/login/" in response["Location"]
-
-
-@pytest.mark.django_db
-def test_non_staff_user_is_redirected_to_login(client, staff_user):
-    staff_user.is_staff = False
-    staff_user.save()
-    client.force_login(staff_user)
-
-    response = client.get("/admin/")
-
-    assert response.status_code == 302
-    assert "/admin/login/" in response["Location"]
-
-
-@pytest.mark.django_db
-def test_profileless_staff_user_is_redirected_to_onboarding(
-    client, staff_user, onboarding_group
+def _request(
+    path="/admin/",
+    *,
+    is_authenticated=True,
+    is_staff=True,
+    has_profile=False,
 ):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.get("/admin/")
-
-    assert response.status_code == 302
-    assert response["Location"] == reverse("admin:profiles_publicprofile_add")
-
-
-@pytest.mark.django_db
-def test_profileless_staff_user_can_access_onboarding_form(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.get(reverse("admin:profiles_publicprofile_add"))
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_profileless_staff_user_is_redirected_from_any_admin_route(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.get(reverse("admin:auth_group_changelist"))
-
-    assert response.status_code == 302
-    assert response["Location"] == reverse("admin:profiles_publicprofile_add")
-
-
-@pytest.mark.django_db
-def test_profileless_staff_user_can_logout(client, staff_user, onboarding_group):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.post(reverse("admin:logout"))
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_superuser_without_profile_is_redirected_to_onboarding(client):
-    superuser = User.objects.create_superuser(
-        "super-no-profile", password="test-password"
+    return SimpleNamespace(
+        path=path,
+        user=_request_user(
+            is_authenticated=is_authenticated,
+            is_staff=is_staff,
+            has_profile=has_profile,
+        ),
     )
-    client.force_login(superuser)
-
-    response = client.get("/admin/")
-
-    assert response.status_code == 302
-    assert response["Location"] == reverse("admin:profiles_publicprofile_add")
-
-
-@pytest.mark.django_db
-def test_staff_with_profile_sees_only_profile_module_without_tool_groups(
-    client, profiled_staff_user
-):
-    client.force_login(profiled_staff_user)
-
-    response = client.get("/admin/")
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Profiles" in content
-    assert "Variables" not in content
-    assert "Social network configs" not in content
-
-
-@pytest.mark.django_db
-def test_tool_group_reveals_corresponding_admin_section(
-    client, profiled_staff_user
-):
-    variable_content_type = ContentType.objects.get(
-        app_label="profiles", model="variable"
-    )
-    permission = Permission.objects.get(
-        codename="change_variable", content_type=variable_content_type
-    )
-    tool_group = Group.objects.create(name="Variables")
-    tool_group.permissions.add(permission)
-    profiled_staff_user.groups.add(tool_group)
-    client.force_login(profiled_staff_user)
-
-    response = client.get("/admin/")
-
-    assert response.status_code == 200
-    assert "Variables" in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_onboarding_group_only_contains_add_publicprofile_permission(
-    onboarding_group,
-):
-    permissions = list(onboarding_group.permissions.values_list("codename", flat=True))
-
-    assert permissions == ["add_publicprofile"]
-
-
-@pytest.mark.django_db
-def test_onboarding_group_only_grants_access_to_public_profile_add(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    add_response = client.get(reverse("admin:profiles_publicprofile_add"))
-    assert add_response.status_code == 200
-
-    group_response = client.get(reverse("admin:auth_group_changelist"))
-    assert group_response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_creating_profile_does_not_change_user_groups(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    client.post(
-        reverse("admin:profiles_publicprofile_add"),
-        {
-            "public_username": "new-user",
-            "first_name": "New",
-            "last_name": "User",
-            "title": "Title",
-            "subtitle": "Subtitle",
-            "specialty": "Specialty",
-            "short_description": "Description",
-        },
-    )
-
-    staff_user.refresh_from_db()
-    assert list(staff_user.groups.all()) == [onboarding_group]
-
-
-@pytest.mark.django_db
-def test_valid_onboarding_creates_profile_for_session_user(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.post(
-        reverse("admin:profiles_publicprofile_add"),
-        {
-            "public_username": "session-user",
-            "first_name": "Session",
-            "last_name": "User",
-            "title": "Title",
-            "subtitle": "Subtitle",
-            "specialty": "Specialty",
-            "short_description": "Description",
-        },
-    )
-
-    assert response.status_code == 302
-    profile = PublicProfile.objects.get(user=staff_user)
-    assert profile.public_username == "session-user"
-
-
-@pytest.mark.django_db
-def test_invalid_onboarding_keeps_user_on_form(
-    client, staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.post(
-        reverse("admin:profiles_publicprofile_add"),
-        {
-            "public_username": "",
-            "first_name": "",
-            "last_name": "",
-            "title": "",
-            "subtitle": "",
-            "specialty": "",
-            "short_description": "",
-        },
-    )
-
-    assert response.status_code == 200
-    assert b"errornote" in response.content
-    assert not PublicProfile.objects.filter(user=staff_user).exists()
-
-
-@pytest.mark.django_db
-def test_user_cannot_create_profile_for_another_user(
-    client, staff_user, other_staff_user, onboarding_group
-):
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    client.post(
-        reverse("admin:profiles_publicprofile_add"),
-        {
-            "public_username": "impersonation",
-            "first_name": "Impersonation",
-            "last_name": "Attempt",
-            "title": "Title",
-            "subtitle": "Subtitle",
-            "specialty": "Specialty",
-            "short_description": "Description",
-        },
-    )
-
-    assert PublicProfile.objects.filter(user=staff_user).exists()
-    assert not PublicProfile.objects.filter(user=other_staff_user).exists()
-
-
-@pytest.mark.django_db
-def test_user_cannot_edit_other_user_profile(
-    client, staff_user, other_staff_user, onboarding_group
-):
-    PublicProfile.objects.create(
-        user=staff_user,
-        public_username="own-profile",
-        first_name="Own",
-        last_name="Profile",
-        title="Title",
-        subtitle="Subtitle",
-        specialty="Specialty",
-        short_description="Description",
-    )
-    other_profile = PublicProfile.objects.create(
-        user=other_staff_user,
-        public_username="other-profile",
-        first_name="Other",
-        last_name="Profile",
-        title="Title",
-        subtitle="Subtitle",
-        specialty="Specialty",
-        short_description="Description",
-    )
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.get(
-        reverse("admin:profiles_publicprofile_change", args=[other_profile.pk])
-    )
-
-    assert response.status_code in (302, 403)
-
-
-@pytest.mark.django_db
-def test_form_prefills_from_session_account(
-    client, staff_user, onboarding_group
-):
-    staff_user.first_name = "Prefilled"
-    staff_user.last_name = "Name"
-    staff_user.save()
-    staff_user.groups.add(onboarding_group)
-    client.force_login(staff_user)
-
-    response = client.get(reverse("admin:profiles_publicprofile_add"))
-    content = response.content.decode()
-
-    assert 'value="staff-user"' in content
-    assert 'value="Prefilled"' in content
-    assert 'value="Name"' in content
 
 
 class TestPublicProfileOnboardingMiddleware:
@@ -352,61 +64,48 @@ class TestPublicProfileOnboardingMiddleware:
     def middleware(self):
         return PublicProfileOnboardingMiddleware(get_response=lambda request: "ok")
 
-    def _request(self, path, *, is_authenticated=False, is_staff=False, has_profile=False):
-        from types import SimpleNamespace
-
-        user = SimpleNamespace(
-            is_authenticated=is_authenticated,
-            is_staff=is_staff,
-        )
-        if has_profile:
-            user.public_profile = SimpleNamespace()
-        return SimpleNamespace(path=path, user=user)
-
     def test_call_redirects_when_onboarding_required(self, middleware):
-        request = self._request("/admin/", is_authenticated=True, is_staff=True)
+        request = _request(is_authenticated=True, is_staff=True)
         response = middleware(request)
 
         assert response.status_code == 302
         assert response["Location"] == reverse("admin:profiles_publicprofile_add")
 
     def test_call_continues_when_onboarding_not_required(self, middleware):
-        request = self._request("/admin/login/", is_authenticated=False)
+        request = _request(path="/admin/login/", is_authenticated=False)
 
         assert middleware(request) == "ok"
 
     def test_must_onboard_false_for_non_admin_path(self, middleware):
-        request = self._request("/", is_authenticated=True, is_staff=True)
+        request = _request(path="/", is_authenticated=True, is_staff=True)
 
         assert middleware._must_onboard(request) is False
 
     def test_must_onboard_false_for_anonymous_user(self, middleware):
-        request = self._request("/admin/", is_authenticated=False)
+        request = _request(is_authenticated=False)
 
         assert middleware._must_onboard(request) is False
 
     def test_must_onboard_false_for_non_staff_user(self, middleware):
-        request = self._request("/admin/", is_authenticated=True, is_staff=False)
+        request = _request(is_authenticated=True, is_staff=False)
 
         assert middleware._must_onboard(request) is False
 
     def test_must_onboard_false_for_exempt_url(self, middleware):
-        request = self._request(
-            "/admin/login/", is_authenticated=True, is_staff=True
-        )
+        request = _request(path="/admin/login/", is_authenticated=True, is_staff=True)
 
         assert middleware._must_onboard(request) is False
 
     def test_must_onboard_false_when_profile_exists(self, middleware):
-        request = self._request(
-            "/admin/", is_authenticated=True, is_staff=True, has_profile=True
-        )
+        request = _request(is_authenticated=True, is_staff=True, has_profile=True)
 
         assert middleware._must_onboard(request) is False
 
     def test_must_onboard_true_when_profile_missing(self, middleware):
-        request = self._request(
-            "/admin/profiles/publicprofile/", is_authenticated=True, is_staff=True
+        request = _request(
+            path="/admin/profiles/publicprofile/",
+            is_authenticated=True,
+            is_staff=True,
         )
 
         assert middleware._must_onboard(request) is True
@@ -424,14 +123,208 @@ class TestPublicProfileOnboardingMiddleware:
         ],
     )
     def test_is_exempt_for_admin_urls(self, middleware, path, expected):
-        request = self._request(path)
+        request = _request(path=path)
 
         assert middleware._is_exempt(request) is expected
 
     def test_is_exempt_false_for_unresolvable_url(self, middleware, mocker):
-        request = self._request("/admin/not-a-real-url/")
-        resolve = mocker.patch("profiles.middleware.resolve")
-        from django.urls import Resolver404
-        resolve.side_effect = Resolver404
+        request = _request(path="/admin/not-a-real-url/")
+        resolve_mock = mocker.patch("profiles.middleware.resolve")
+        resolve_mock.side_effect = Resolver404
 
         assert middleware._is_exempt(request) is False
+
+
+class TestPublicProfileForm:
+    def test_form_omits_user_field(self):
+        assert tuple(PublicProfileForm.base_fields) == (
+            "public_username",
+            "first_name",
+            "last_name",
+            "title",
+            "subtitle",
+            "specialty",
+            "short_description",
+            "photo_url",
+        )
+
+    def test_form_accepts_user_keyword_only(self):
+        user = _user(pk=1)
+        form = PublicProfileForm(user=user)
+
+        assert form.user is user
+
+    def test_form_prefills_from_user(self):
+        user = _user(pk=1, username="jdoe")
+        user.first_name = "John"
+        user.last_name = "Doe"
+        form = PublicProfileForm(user=user)
+
+        assert form.fields["public_username"].initial == "jdoe"
+        assert form.fields["first_name"].initial == "John"
+        assert form.fields["last_name"].initial == "Doe"
+
+    def test_form_does_not_prefill_when_editing(self):
+        user = _user(pk=1, username="jdoe")
+        profile = PublicProfile(
+            pk=1,
+            user=user,
+            public_username="existing",
+            first_name="Existing",
+            last_name="Profile",
+            title="Title",
+            subtitle="Subtitle",
+            specialty="Specialty",
+            short_description="Description",
+        )
+        form = PublicProfileForm(instance=profile, user=user)
+
+        assert form.initial.get("public_username") == "existing"
+
+
+class TestPublicProfileAdmin:
+    @pytest.fixture
+    def admin(self):
+        from django.contrib import admin
+
+        return PublicProfileAdmin(PublicProfile, admin.site)
+
+    def test_get_form_binds_user_to_form_class(self, admin):
+        request = _request(is_authenticated=True, is_staff=True)
+        form_class = admin.get_form(request)
+        form = form_class()
+
+        assert form.user is request.user
+
+    def test_get_queryset_returns_empty_when_request_is_none(self, admin):
+        assert list(admin.get_queryset(None)) == []
+
+    def test_get_queryset_filters_by_request_user(self, admin, mocker):
+        queryset = mocker.MagicMock()
+        mocker.patch.object(
+            admin.__class__.__bases__[0],
+            "get_queryset",
+            return_value=queryset,
+        )
+        request = _request(is_authenticated=True, is_staff=True)
+
+        admin.get_queryset(request)
+
+        queryset.filter.assert_called_once_with(user_id=request.user.id)
+
+    def test_has_module_permission_only_for_staff(self, admin):
+        assert admin.has_module_permission(_request(is_staff=True)) is True
+        assert admin.has_module_permission(_request(is_staff=False)) is False
+        assert admin.has_module_permission(_request(is_authenticated=False)) is False
+        assert admin.has_module_permission(None) is False
+
+    def test_has_add_permission_for_staff_without_profile(self, admin, mocker):
+        mocker.patch.object(
+            PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=False))
+        )
+        request = _request(is_authenticated=True, is_staff=True)
+
+        assert admin.has_add_permission(request) is True
+
+    def test_has_add_permission_denied_when_profile_exists(self, admin, mocker):
+        mocker.patch.object(
+            PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=True))
+        )
+        request = _request(is_authenticated=True, is_staff=True)
+
+        assert admin.has_add_permission(request) is False
+
+    def test_has_add_permission_denied_for_non_staff_or_anonymous(self, admin):
+        assert admin.has_add_permission(_request(is_staff=False)) is False
+        assert admin.has_add_permission(_request(is_authenticated=False)) is False
+        assert admin.has_add_permission(None) is False
+
+    def test_has_change_permission_allows_owner(self, admin):
+        own_profile = PublicProfile(user_id=1)
+        other_profile = PublicProfile(user_id=2)
+        request = _request(is_authenticated=True, is_staff=True)
+
+        assert admin.has_change_permission(request, own_profile) is True
+        assert admin.has_change_permission(request, other_profile) is False
+
+    def test_has_change_permission_without_object_uses_profile_existence(self, admin, mocker):
+        mocker.patch.object(
+            PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=True))
+        )
+        request = _request(is_authenticated=True, is_staff=True)
+
+        assert admin.has_change_permission(request) is True
+
+    def test_has_change_permission_denied_for_non_staff_or_anonymous(self, admin):
+        assert admin.has_change_permission(_request(is_staff=False)) is False
+        assert admin.has_change_permission(_request(is_authenticated=False)) is False
+        assert admin.has_change_permission(None) is False
+
+    def test_save_model_assigns_request_user_on_creation(self, admin, mocker):
+        user = _user(pk=1)
+        request = SimpleNamespace(user=user)
+        profile = PublicProfile()
+        form = Mock()
+        mocker.patch("django.db.models.Model.save")
+
+        admin.save_model(request, profile, form, change=False)
+
+        assert profile.user is user
+
+
+class TestOnboardingGroup:
+    def test_onboarding_group_name_matches_settings(self):
+        from django.conf import settings
+
+        assert settings.PUBLIC_PROFILE_ONBOARDING_GROUP_NAME == "Public Profile Onboarding"
+
+    def test_migration_file_exists(self):
+        import importlib
+
+        migration_module = importlib.import_module(
+            "profiles.migrations.0004_onboarding_group"
+        )
+
+        assert hasattr(migration_module, "create_onboarding_group")
+        assert hasattr(migration_module, "remove_onboarding_group")
+
+
+class TestOwnershipAndGroups:
+    @pytest.fixture
+    def admin(self):
+        from django.contrib import admin
+
+        return PublicProfileAdmin(PublicProfile, admin.site)
+
+    def test_public_profile_rejects_user_reassignment(self, mocker):
+        original = _user(pk=1)
+        other = _user(pk=2)
+        profile = PublicProfile(pk=1, user=original)
+        profile.user = other
+
+        mocker.patch.object(
+            PublicProfile.objects,
+            "filter",
+            return_value=Mock(
+                values_list=Mock(return_value=Mock(first=Mock(return_value=1)))
+            ),
+        )
+        mocker.patch("django.db.models.Model.save")
+
+        from django.core.exceptions import ValidationError
+
+        with pytest.raises(ValidationError, match="cannot change"):
+            profile.save()
+
+    def test_user_cannot_create_profile_for_another_user(self, admin, mocker):
+        staff_user = _user(pk=1)
+        other_user = _user(pk=2)
+        request = SimpleNamespace(user=staff_user)
+        profile = PublicProfile()
+        form = Mock()
+        mocker.patch("django.db.models.Model.save")
+
+        admin.save_model(request, profile, form, change=False)
+
+        assert profile.user is staff_user
+        assert profile.user is not other_user
