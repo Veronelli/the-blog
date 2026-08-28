@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib import admin
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect
+from django.http import HttpRequest
 
 from profiles.models import PublicProfile
 
@@ -21,25 +20,36 @@ class PublicProfileForm(forms.ModelForm):
         )
 
 
+@admin.register(PublicProfile)
 class PublicProfileAdmin(admin.ModelAdmin):
     form = PublicProfileForm
-    readonly_fields = ("user",)
+    add_form_template = "admin/profiles/publicprofile/change_form.html"
+    change_form_template = "admin/profiles/publicprofile/change_form.html"
 
     def get_queryset(self, request: HttpRequest):
-        return super().get_queryset(request).filter(user=request.user)
+        if not request.user.is_authenticated:
+            return super().get_queryset(request).none()
+        return super().get_queryset(request).filter(user_id=request.user.id)
 
     def has_module_permission(self, request: HttpRequest) -> bool:
-        return True
+        user = request.user
+        return user.is_authenticated and user.is_staff
 
     def has_add_permission(self, request: HttpRequest) -> bool:
-        return not PublicProfile.objects.filter(user=request.user).exists()
+        user = request.user
+        if not user.is_authenticated or not user.is_staff:
+            return False
+        return not PublicProfile.objects.filter(user_id=user.id).exists()
 
     def has_change_permission(
         self, request: HttpRequest, obj: PublicProfile | None = None
     ) -> bool:
+        user = request.user
+        if not user.is_authenticated or not user.is_staff:
+            return False
         if obj is None:
-            return PublicProfile.objects.filter(user=request.user).exists()
-        return obj.user_id == request.user.id
+            return PublicProfile.objects.filter(user_id=user.id).exists()
+        return obj.user_id == user.id
 
     def has_view_permission(
         self, request: HttpRequest, obj: PublicProfile | None = None
@@ -61,23 +71,3 @@ class PublicProfileAdmin(admin.ModelAdmin):
         if not change:
             obj.user = request.user
         super().save_model(request, obj, form, change)
-
-
-class SelfServiceAdminSite(admin.AdminSite):
-    site_header = "Public profile dashboard"
-    site_title = "Public profile dashboard"
-    index_title = "Public profile dashboard"
-
-    def has_permission(self, request: HttpRequest) -> bool:
-        return request.user.is_authenticated and request.user.is_active
-
-    def index(
-        self, request: HttpRequest, extra_context: dict[str, object] | None = None
-    ) -> HttpResponse:
-        if not PublicProfile.objects.filter(user=request.user).exists():
-            return redirect(f"{self.name}:profiles_publicprofile_add")
-        return super().index(request, extra_context)
-
-
-self_service_admin_site = SelfServiceAdminSite(name="self_service_admin")
-self_service_admin_site.register(PublicProfile, PublicProfileAdmin)
