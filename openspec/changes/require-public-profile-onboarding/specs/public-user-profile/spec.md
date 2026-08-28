@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Propiedad inmutable del perfil público
-El sistema SHALL asociar cada perfil público con el usuario de autenticación que lo crea desde su sesión autenticada, incluso cuando dicho usuario tenga privilegios staff o de superusuario. Una vez creado el perfil, esa asociación MUST permanecer inmutable y ningún flujo de edición del perfil puede reasignarlo a otro usuario de autenticación.
+El sistema SHALL asociar cada perfil público con la cuenta staff que lo crea desde su sesión autenticada, incluso cuando dicha cuenta tenga privilegios de superusuario. Una vez creado el perfil, esa asociación MUST permanecer inmutable y ningún flujo de edición del perfil puede reasignarlo a otra cuenta de autenticación.
 
 #### Scenario: Perfil asociado al usuario autenticado
 - **WHEN** un usuario autenticado crea su perfil público mediante el flujo de onboarding
