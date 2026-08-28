@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import Client
 from django.urls import reverse
 
+from profiles.middleware import PublicProfileOnboardingMiddleware
 from profiles.models import PublicProfile
 
 
@@ -344,3 +345,93 @@ def test_form_prefills_from_session_account(
     assert 'value="staff-user"' in content
     assert 'value="Prefilled"' in content
     assert 'value="Name"' in content
+
+
+class TestPublicProfileOnboardingMiddleware:
+    @pytest.fixture
+    def middleware(self):
+        return PublicProfileOnboardingMiddleware(get_response=lambda request: "ok")
+
+    def _request(self, path, *, is_authenticated=False, is_staff=False, has_profile=False):
+        from types import SimpleNamespace
+
+        user = SimpleNamespace(
+            is_authenticated=is_authenticated,
+            is_staff=is_staff,
+        )
+        if has_profile:
+            user.public_profile = SimpleNamespace()
+        return SimpleNamespace(path=path, user=user)
+
+    def test_call_redirects_when_onboarding_required(self, middleware):
+        request = self._request("/admin/", is_authenticated=True, is_staff=True)
+        response = middleware(request)
+
+        assert response.status_code == 302
+        assert response["Location"] == reverse("admin:profiles_publicprofile_add")
+
+    def test_call_continues_when_onboarding_not_required(self, middleware):
+        request = self._request("/admin/login/", is_authenticated=False)
+
+        assert middleware(request) == "ok"
+
+    def test_must_onboard_false_for_non_admin_path(self, middleware):
+        request = self._request("/", is_authenticated=True, is_staff=True)
+
+        assert middleware._must_onboard(request) is False
+
+    def test_must_onboard_false_for_anonymous_user(self, middleware):
+        request = self._request("/admin/", is_authenticated=False)
+
+        assert middleware._must_onboard(request) is False
+
+    def test_must_onboard_false_for_non_staff_user(self, middleware):
+        request = self._request("/admin/", is_authenticated=True, is_staff=False)
+
+        assert middleware._must_onboard(request) is False
+
+    def test_must_onboard_false_for_exempt_url(self, middleware):
+        request = self._request(
+            "/admin/login/", is_authenticated=True, is_staff=True
+        )
+
+        assert middleware._must_onboard(request) is False
+
+    def test_must_onboard_false_when_profile_exists(self, middleware):
+        request = self._request(
+            "/admin/", is_authenticated=True, is_staff=True, has_profile=True
+        )
+
+        assert middleware._must_onboard(request) is False
+
+    def test_must_onboard_true_when_profile_missing(self, middleware):
+        request = self._request(
+            "/admin/profiles/publicprofile/", is_authenticated=True, is_staff=True
+        )
+
+        assert middleware._must_onboard(request) is True
+
+    @pytest.mark.parametrize(
+        "path,expected",
+        [
+            ("/admin/login/", True),
+            ("/admin/logout/", True),
+            ("/admin/password_change/", True),
+            ("/admin/password_change/done/", True),
+            ("/admin/profiles/publicprofile/add/", True),
+            ("/admin/profiles/publicprofile/", False),
+            ("/admin/auth/group/", False),
+        ],
+    )
+    def test_is_exempt_for_admin_urls(self, middleware, path, expected):
+        request = self._request(path)
+
+        assert middleware._is_exempt(request) is expected
+
+    def test_is_exempt_false_for_unresolvable_url(self, middleware, mocker):
+        request = self._request("/admin/not-a-real-url/")
+        resolve = mocker.patch("profiles.middleware.resolve")
+        from django.urls import Resolver404
+        resolve.side_effect = Resolver404
+
+        assert middleware._is_exempt(request) is False

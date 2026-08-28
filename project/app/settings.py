@@ -135,7 +135,9 @@ LOG_TRACKING_SERVICE_CLASS = os.getenv("LOG_TRACKING_SERVICE_CLASS")
 LOG_TRACKING_LOKI_BASE_URL = os.getenv("LOG_TRACKING_LOKI_BASE_URL")
 LOG_TRACKING_LOKI_TOKEN = os.getenv("LOG_TRACKING_LOKI_TOKEN")
 
+from profiles.constants import ONBOARDING_GROUP_NAME
+
 # Public profile onboarding
 # Staff accounts without a PublicProfile must belong to this group to access
 # the onboarding form. Tool groups are assigned manually after onboarding.
-PUBLIC_PROFILE_ONBOARDING_GROUP_NAME = "Public Profile Onboarding"
+PUBLIC_PROFILE_ONBOARDING_GROUP_NAME = ONBOARDING_GROUP_NAME

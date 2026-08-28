@@ -182,8 +182,22 @@ def test_public_profile_admin_denies_change_without_object_when_profile_missing(
 
 
 @pytest.mark.django_db
-def test_public_profile_admin_filters_queryset_to_request_user(
+def test_public_profile_admin_returns_empty_queryset_when_request_is_none(
     public_profile_admin: PublicProfileAdmin,
+) -> None:
+    assert list(public_profile_admin.get_queryset(None)) == []
+
+
+def test_public_profile_admin_denies_change_for_unauthenticated_request(
+    public_profile_admin: PublicProfileAdmin,
+) -> None:
+    assert public_profile_admin.has_change_permission(_request(is_authenticated=False)) is False
+    assert public_profile_admin.has_change_permission(_request(is_staff=False)) is False
+
+
+@pytest.mark.django_db
+def test_public_profile_admin_filters_queryset_to_request_user(
+    mocker, public_profile_admin: PublicProfileAdmin,
 ) -> None:
     owner = User.objects.create_user("queryset-owner", password="pw", is_staff=True)
     other = User.objects.create_user("queryset-other", password="pw", is_staff=True)
