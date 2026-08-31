@@ -1,44 +1,16 @@
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from django import forms
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models as django_models
 
+from profiles.admin.public_profile import PublicProfileAdmin, PublicProfileForm
 from profiles.models import PublicProfile
-from profiles.admin.public_profile import (
-    PublicProfileAdmin,
-    PublicProfileForm,
-    SelfServiceAdminSite,
-    self_service_admin_site,
-)
-
-
-def _request(user_id: int = 1, *, is_active: bool = True, is_authenticated: bool = True):
-    return SimpleNamespace(
-        user=SimpleNamespace(
-            id=user_id, is_active=is_active, is_authenticated=is_authenticated
-        )
-    )
-
-
-@pytest.fixture
-def public_profile_admin() -> PublicProfileAdmin:
-    return PublicProfileAdmin(PublicProfile, self_service_admin_site)
-
-
-def test_self_service_site_registers_only_public_profile() -> None:
-    assert set(self_service_admin_site._registry) == {PublicProfile}
-
-
-def test_self_service_site_accepts_any_active_authenticated_user() -> None:
-    site = SelfServiceAdminSite(name="test_self_service")
-
-    assert site.has_permission(_request()) is True
-    assert site.has_permission(_request(is_active=False)) is False
-    assert site.has_permission(_request(is_authenticated=False)) is False
+from tests.factories import create_user
+from tests.unit_test.functions._request import _request
 
 
 def test_public_profile_form_omits_user_field() -> None:
@@ -54,23 +26,24 @@ def test_public_profile_form_omits_user_field() -> None:
     )
 
 
-def test_public_profile_admin_makes_user_read_only(
+def test_public_profile_admin_exposes_module_only_to_staff(
     public_profile_admin: PublicProfileAdmin,
 ) -> None:
-    assert public_profile_admin.readonly_fields == ("user",)
-
-
-def test_public_profile_admin_always_exposes_its_module(
-    public_profile_admin: PublicProfileAdmin,
-) -> None:
-    assert public_profile_admin.has_module_permission(_request()) is True
+    assert public_profile_admin.has_module_permission(_request(is_staff=True)) is True
+    assert public_profile_admin.has_module_permission(_request(is_staff=False)) is False
+    assert (
+        public_profile_admin.has_module_permission(_request(is_authenticated=False))
+        is False
+    )
+    assert public_profile_admin.has_module_permission(None) is False
 
 
 def test_public_profile_admin_allows_add_when_profile_is_missing(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    mocker.patch.object(PublicProfile, "objects")
-    PublicProfile.objects.filter.return_value.exists.return_value = False
+    mocker.patch.object(
+        PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=False))
+    )
 
     assert public_profile_admin.has_add_permission(_request()) is True
 
@@ -78,10 +51,22 @@ def test_public_profile_admin_allows_add_when_profile_is_missing(
 def test_public_profile_admin_denies_second_add(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    mocker.patch.object(PublicProfile, "objects")
-    PublicProfile.objects.filter.return_value.exists.return_value = True
+    mocker.patch.object(
+        PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=True))
+    )
 
     assert public_profile_admin.has_add_permission(_request()) is False
+
+
+def test_public_profile_admin_denies_add_for_non_staff(
+    public_profile_admin: PublicProfileAdmin,
+) -> None:
+    assert public_profile_admin.has_add_permission(_request(is_staff=False)) is False
+    assert (
+        public_profile_admin.has_add_permission(_request(is_authenticated=False))
+        is False
+    )
+    assert public_profile_admin.has_add_permission(None) is False
 
 
 def test_public_profile_admin_allows_only_owner_to_change(
@@ -101,8 +86,9 @@ def test_public_profile_admin_allows_only_owner_to_change(
 def test_public_profile_admin_allows_change_without_object_when_profile_exists(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    mocker.patch.object(PublicProfile, "objects")
-    PublicProfile.objects.filter.return_value.exists.return_value = True
+    mocker.patch.object(
+        PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=True))
+    )
 
     assert public_profile_admin.has_change_permission(_request()) is True
 
@@ -110,28 +96,51 @@ def test_public_profile_admin_allows_change_without_object_when_profile_exists(
 def test_public_profile_admin_denies_change_without_object_when_profile_missing(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    mocker.patch.object(PublicProfile, "objects")
-    PublicProfile.objects.filter.return_value.exists.return_value = False
+    mocker.patch.object(
+        PublicProfile.objects, "filter", return_value=Mock(exists=Mock(return_value=False))
+    )
 
     assert public_profile_admin.has_change_permission(_request()) is False
+
+
+def test_public_profile_admin_returns_empty_queryset_when_request_is_none(
+    public_profile_admin: PublicProfileAdmin,
+) -> None:
+    assert list(public_profile_admin.get_queryset(None)) == []
+
+
+def test_public_profile_admin_denies_change_for_unauthenticated_request(
+    public_profile_admin: PublicProfileAdmin,
+) -> None:
+    assert (
+        public_profile_admin.has_change_permission(_request(is_authenticated=False))
+        is False
+    )
+    assert public_profile_admin.has_change_permission(_request(is_staff=False)) is False
+    assert public_profile_admin.has_change_permission(None) is False
 
 
 def test_public_profile_admin_filters_queryset_to_request_user(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
     queryset = mocker.MagicMock()
-    mocker.patch.object(admin.ModelAdmin, "get_queryset", return_value=queryset)
+    base_get_queryset = mocker.patch.object(
+        admin.ModelAdmin, "get_queryset", return_value=queryset
+    )
     request = _request()
 
-    assert public_profile_admin.get_queryset(request) is queryset.filter.return_value
-    queryset.filter.assert_called_once_with(user=request.user)
+    result = public_profile_admin.get_queryset(request)
+
+    base_get_queryset.assert_called_once_with(request)
+    queryset.filter.assert_called_once_with(user_id=request.user.id)
+    assert result is queryset.filter.return_value
 
 
 def test_public_profile_admin_assigns_request_user_when_creating(
     mocker, public_profile_admin: PublicProfileAdmin
 ) -> None:
-    user = get_user_model()(pk=1, username="profile-owner")
-    request = SimpleNamespace(user=user)
+    user = create_user(pk=1, username="profile-owner")
+    request = _request(user=user)
     profile = PublicProfile()
     form = mocker.MagicMock(spec=forms.ModelForm)
     mocker.patch.object(django_models.Model, "save")
@@ -141,36 +150,16 @@ def test_public_profile_admin_assigns_request_user_when_creating(
     assert profile.user is request.user
 
 
-def test_self_service_site_index_redirects_user_without_profile(mocker) -> None:
-    site = SelfServiceAdminSite(name="test_self_service")
-    request = _request()
-    response = mocker.MagicMock()
-    mocker.patch.object(PublicProfile, "objects")
-    redirect_mock = mocker.patch(
-        "profiles.admin.public_profile.redirect", return_value=response
-    )
-    PublicProfile.objects.filter.return_value.exists.return_value = False
-
-    assert site.index(request) is response
-    redirect_mock.assert_called_once_with("test_self_service:profiles_publicprofile_add")
-
-
-def test_self_service_site_index_renders_dashboard_with_profile(mocker) -> None:
-    site = SelfServiceAdminSite(name="test_self_service")
-    request = _request()
-    response = mocker.MagicMock()
-    mocker.patch.object(PublicProfile, "objects")
-    mocker.patch.object(admin.AdminSite, "index", return_value=response)
-    PublicProfile.objects.filter.return_value.exists.return_value = True
-
-    assert site.index(request) is response
-    admin.AdminSite.index.assert_called_once_with(request, None)
-
-
 def test_public_profile_rejects_user_reassignment(mocker) -> None:
-    mocker.patch.object(PublicProfile, "objects")
-    PublicProfile.objects.filter.return_value.values_list.return_value.first.return_value = 1
-    profile = PublicProfile(pk=1, user_id=2)
+    original = create_user(pk=1)
+    other = create_user(pk=2)
+    profile = PublicProfile(pk=1, user=original)
+    profile.user = other
+
+    mocker.patch.object(
+        PublicProfile.objects, "filter", return_value=Mock(values_list=Mock(return_value=Mock(first=Mock(return_value=1))))
+    )
+    mocker.patch.object(django_models.Model, "save")
 
     with pytest.raises(ValidationError, match="cannot change"):
         profile.save()

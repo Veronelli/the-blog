@@ -62,6 +62,7 @@ def test_profile_public_username_is_required() -> None:
     assert "public_username" in exc_info.value.message_dict
 
 
+@pytest.mark.django_db
 def test_profile_accepts_valid_photo_url() -> None:
     profile = create_public_profile(photo_url="https://example.test/avatar.png")
 
@@ -70,12 +71,14 @@ def test_profile_accepts_valid_photo_url() -> None:
     assert profile.photo_url == "https://example.test/avatar.png"
 
 
+@pytest.mark.django_db
 def test_profile_accepts_blank_photo_url() -> None:
     profile = create_public_profile(photo_url="")
 
     profile.full_clean(exclude={"user"})
 
 
+@pytest.mark.django_db
 def test_profile_rejects_invalid_photo_url() -> None:
     profile = create_public_profile(photo_url="not-a-url")
 

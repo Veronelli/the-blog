@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import admin
 
 from profiles.models import SocialNetworkConfig, Variable, _extract_placeholders
+from . import public_profile  # noqa: E402,F401  # registers PublicProfileAdmin
 
 
 @admin.register(Variable)
