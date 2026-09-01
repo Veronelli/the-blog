@@ -1,0 +1,29 @@
+## 1. App and Model
+
+- [ ] 1.1 Create the `clients` Django app inside `project/`.
+- [ ] 1.2 Define the `Client` model with fields: `name`, `domain`, `secret`, `is_active`, `groups`, `permissions`, `created_at`, `updated_at`.
+- [ ] 1.3 Implement automatic `secret` generation when the field is blank.
+- [ ] 1.4 Add `Meta` options for ordering and verbose names.
+- [ ] 1.5 Generate the initial migration for `clients`.
+- [ ] 1.6 Register `clients` in `INSTALLED_APPS`.
+
+## 2. Validators and Model Helpers
+
+- [ ] 2.1 Create a validator that ensures `domain` is a comma-separated list of valid URLs with protocol.
+- [ ] 2.2 Implement `Client.is_domain_allowed(host)` to check a hostname against the allowed list.
+- [ ] 2.3 Implement `Client.has_perm(codename)` covering direct and group permissions.
+- [ ] 2.4 Implement `Client.has_module_perms(app_label)`.
+
+## 3. Django Admin
+
+- [ ] 3.1 Create a custom admin form that generates and displays the `secret` when it is blank.
+- [ ] 3.2 Configure `ClientAdmin` with list display, filters, search and exclude `secret` from readonly/changelist views.
+- [ ] 3.3 Ensure the secret field is visible only on add/change forms and hidden from the changelist.
+
+## 4. Tests and Validation
+
+- [ ] 4.1 Add unit tests for `Client` creation, secret generation and name uniqueness.
+- [ ] 4.2 Add unit tests for domain validation (valid single/multiple, missing protocol, empty entry).
+- [ ] 4.3 Add unit tests for permission helpers (`has_perm`, `has_module_perms`) and `is_domain_allowed`.
+- [ ] 4.4 Add pytest unit tests for admin configuration (secret not in list display, form behavior).
+- [ ] 4.5 Run `uv run python project/manage.py makemigrations`, `uv run python project/manage.py migrate`, `uv run python project/manage.py check` and `uv run pytest`.
