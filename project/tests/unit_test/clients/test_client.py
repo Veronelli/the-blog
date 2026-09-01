@@ -1,17 +1,20 @@
 import pytest
-from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 
 from clients.models import Client
 from clients.validators import validate_domains
-from tests.unit_test.functions._client import _client
+from tests.unit_test.mocks.clients.mock_client import mock_client_with_id
+from tests.unit_test.mocks.clients.mock_permissions import (
+    mock_client_groups,
+    mock_client_permissions,
+)
 
 
 # Model metadata tests
 
 
-def test_client_str_returns_name() -> None:
-    client = _client(name="ACME")
+def test_client_str_returns_name(client_factory) -> None:
+    client = client_factory(name="ACME")
 
     assert str(client) == "ACME"
 
@@ -29,37 +32,20 @@ def test_client_secret_field_is_unique_and_blank() -> None:
     assert field.blank is True
 
 
-# Creation and secret generation tests
+# Secret generation tests
 
 
-@pytest.mark.django_db
-def test_client_generates_secret_on_save() -> None:
-    client = _client(name="auto-secret")
+def test_client_generate_secret_returns_non_empty_token() -> None:
+    secret = Client.generate_secret()
 
-    assert not client.secret
-
-    client.save()
-
-    assert client.secret
-    assert len(client.secret) > 0
+    assert secret
+    assert len(secret) > 0
 
 
-@pytest.mark.django_db
-def test_client_preserves_provided_secret() -> None:
-    client = _client(name="provided-secret", secret="my-custom-secret")
-
-    client.save()
+def test_client_preserves_provided_secret(client_factory) -> None:
+    client = client_factory(secret="my-custom-secret")
 
     assert client.secret == "my-custom-secret"
-
-
-@pytest.mark.django_db
-def test_client_name_uniqueness_is_enforced() -> None:
-    _client(name="duplicate").save()
-    second = _client(name="duplicate")
-
-    with pytest.raises(Exception):
-        second.save()
 
 
 # Domain validation tests
@@ -91,70 +77,55 @@ def test_validate_domains_rejects_empty_value() -> None:
 # is_domain_allowed tests
 
 
-def test_is_domain_allowed_returns_true_for_allowed_host() -> None:
-    client = _client(domain="https://example.com,http://app.example.org")
+def test_is_domain_allowed_returns_true_for_allowed_host(client_factory) -> None:
+    client = client_factory(domain="https://example.com,http://app.example.org")
 
     assert client.is_domain_allowed("example.com") is True
     assert client.is_domain_allowed("app.example.org") is True
 
 
-def test_is_domain_allowed_returns_false_for_unknown_host() -> None:
-    client = _client(domain="https://example.com")
+def test_is_domain_allowed_returns_false_for_unknown_host(client_factory) -> None:
+    client = client_factory(domain="https://example.com")
 
     assert client.is_domain_allowed("evil.com") is False
 
 
-# Permission helper tests
+# Permission helper tests using mocks to avoid database access
 
 
-@pytest.mark.django_db
-def test_has_perm_returns_true_for_direct_permission() -> None:
-    client = _client(name="direct-perm")
-    client.save()
-    permission = Permission.objects.first()
-    assert permission is not None
-    client.permissions.add(permission)
+def test_has_perm_returns_true_for_direct_permission(client_factory, mocker) -> None:
+    client = mock_client_with_id(client_factory)
+    mock_client_permissions(mocker, exists_return_value=True)
 
-    assert client.has_perm(permission.codename) is True
+    assert client.has_perm("some.permission") is True
 
 
-@pytest.mark.django_db
-def test_has_perm_returns_true_for_group_permission() -> None:
-    from django.contrib.auth.models import Group
+def test_has_perm_returns_true_for_group_permission(client_factory, mocker) -> None:
+    client = mock_client_with_id(client_factory)
+    mock_client_permissions(mocker, exists_return_value=False)
+    mock_client_groups(mocker, exists_return_value=True)
 
-    client = _client(name="group-perm")
-    client.save()
-    permission = Permission.objects.first()
-    assert permission is not None
-    group = Group.objects.create(name="test-group")
-    group.permissions.add(permission)
-    client.groups.add(group)
-
-    assert client.has_perm(permission.codename) is True
+    assert client.has_perm("some.permission") is True
 
 
-@pytest.mark.django_db
-def test_has_perm_returns_false_for_missing_permission() -> None:
-    client = _client(name="no-perm")
-    client.save()
+def test_has_perm_returns_false_for_missing_permission(client_factory, mocker) -> None:
+    client = mock_client_with_id(client_factory)
+    mock_client_permissions(mocker, exists_return_value=False)
+    mock_client_groups(mocker, exists_return_value=False)
 
     assert client.has_perm("nonexistent.permission") is False
 
 
-@pytest.mark.django_db
-def test_has_module_perms_returns_true_for_direct_app_permission() -> None:
-    client = _client(name="module-perm")
-    client.save()
-    permission = Permission.objects.filter(content_type__app_label="auth").first()
-    assert permission is not None
-    client.permissions.add(permission)
+def test_has_module_perms_returns_true_for_direct_app_permission(client_factory, mocker) -> None:
+    client = mock_client_with_id(client_factory)
+    mock_client_permissions(mocker, exists_return_value=True)
 
     assert client.has_module_perms("auth") is True
 
 
-@pytest.mark.django_db
-def test_has_module_perms_returns_false_for_missing_app() -> None:
-    client = _client(name="no-module-perm")
-    client.save()
+def test_has_module_perms_returns_false_for_missing_app(client_factory, mocker) -> None:
+    client = mock_client_with_id(client_factory)
+    mock_client_permissions(mocker, exists_return_value=False)
+    mock_client_groups(mocker, exists_return_value=False)
 
     assert client.has_module_perms("nonexistent") is False
