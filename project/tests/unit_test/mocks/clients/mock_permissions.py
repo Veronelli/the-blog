@@ -1,5 +1,5 @@
 from clients.models import Client
-from tests.unit_test.functions._relation_manager import mock_relation_manager
+from tests.unit_test.functions._mock_manager import mock_relation_manager
 
 
 def mock_client_permissions(mocker, exists_return_value=True):
