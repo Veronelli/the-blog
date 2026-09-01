@@ -1,11 +1,11 @@
 ## 1. App and Model
 
-- [ ] 1.1 Create the `clients` Django app inside `project/`.
-- [ ] 1.2 Define the `Client` model with fields: `name`, `domain`, `secret`, `is_active`, `groups`, `permissions`, `created_at`, `updated_at`.
-- [ ] 1.3 Implement automatic `secret` generation when the field is blank.
-- [ ] 1.4 Add `Meta` options for ordering and verbose names.
-- [ ] 1.5 Generate the initial migration for `clients`.
-- [ ] 1.6 Register `clients` in `INSTALLED_APPS`.
+- [x] 1.1 Create the `clients` Django app inside `project/`.
+- [x] 1.2 Define the `Client` model with fields: `name`, `domain`, `secret`, `is_active`, `groups`, `permissions`, `created_at`, `updated_at`.
+- [x] 1.3 Implement automatic `secret` generation when the field is blank.
+- [x] 1.4 Add `Meta` options for ordering and verbose names.
+- [x] 1.5 Generate the initial migration for `clients`.
+- [x] 1.6 Register `clients` in `INSTALLED_APPS`.
 
 ## 2. Validators and Model Helpers
 
