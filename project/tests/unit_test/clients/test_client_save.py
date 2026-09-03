@@ -1,39 +1,36 @@
-import pytest
+from unittest.mock import patch
 
 from clients.models import Client
-from tests.unit_test.functions._mock_manager import mock_relation_manager
 
 
-@pytest.mark.django_db
-def test_save_generates_secret_when_blank() -> None:
+def test_save_assigns_secret_when_blank(mocker) -> None:
     client = Client(name="blank-secret", domain="https://example.com")
     assert not client.secret
 
-    client.save()
+    with patch("django.db.models.Model.save"):
+        client.save()
 
     assert client.secret
     assert len(client.secret) > 0
 
 
-@pytest.mark.django_db
-def test_save_preserves_provided_secret() -> None:
+def test_save_preserves_provided_secret(mocker) -> None:
     client = Client(
         name="provided-secret",
         domain="https://example.com",
         secret="my-custom-secret",
     )
 
-    client.save()
+    with patch("django.db.models.Model.save"):
+        client.save()
 
     assert client.secret == "my-custom-secret"
 
 
-@pytest.mark.django_db
-def test_save_generates_unique_secrets_for_multiple_clients() -> None:
-    first = Client(name="first", domain="https://first.com")
-    second = Client(name="second", domain="https://second.com")
+def test_generate_secret_returns_unique_values() -> None:
+    secret_one = Client.generate_secret()
+    secret_two = Client.generate_secret()
 
-    first.save()
-    second.save()
-
-    assert first.secret != second.secret
+    assert secret_one
+    assert secret_two
+    assert secret_one != secret_two

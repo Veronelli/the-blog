@@ -1,9 +1,6 @@
-import pytest
-
 from clients.widgets.read_only_text.widget import ReadOnlyTextWidget
 
 
-@pytest.mark.django_db
 def test_widget_renders_value_and_hidden_input() -> None:
     widget = ReadOnlyTextWidget()
 
@@ -14,7 +11,6 @@ def test_widget_renders_value_and_hidden_input() -> None:
     assert '<div class="form-control-static">' in html
 
 
-@pytest.mark.django_db
 def test_widget_renders_copy_button_when_enabled() -> None:
     widget = ReadOnlyTextWidget(copy_button=True)
 
@@ -24,7 +20,6 @@ def test_widget_renders_copy_button_when_enabled() -> None:
     assert "copy-text" in html
 
 
-@pytest.mark.django_db
 def test_widget_does_not_render_copy_button_by_default() -> None:
     widget = ReadOnlyTextWidget()
 
@@ -33,7 +28,6 @@ def test_widget_does_not_render_copy_button_by_default() -> None:
     assert "Copy" not in html
 
 
-@pytest.mark.django_db
 def test_widget_renders_custom_display_tag() -> None:
     widget = ReadOnlyTextWidget(tag="span")
 
