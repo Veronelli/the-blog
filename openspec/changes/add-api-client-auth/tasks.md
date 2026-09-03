@@ -19,11 +19,11 @@
 
 ## 3. Django Admin
 
-- [ ] 3.1 Create a custom admin form that generates and displays the `secret` when it is blank.
-- [ ] 3.2 Configure `ClientAdmin` with list display, filters, search and exclude `secret` from readonly/changelist views.
-- [ ] 3.3 Ensure the secret field is visible only on add/change forms and hidden from the changelist.
-- [ ] 3.4 Add pytest unit tests for admin configuration (secret not in list display, form behavior).
+- [x] 3.1 Create a custom admin form that generates and displays the `secret` when it is blank.
+- [x] 3.2 Configure `ClientAdmin` with list display, filters, search and exclude `secret` from readonly/changelist views.
+- [x] 3.3 Ensure the secret field is visible only on add/change forms and hidden from the changelist.
+- [x] 3.4 Add pytest unit tests for admin configuration (secret not in list display, form behavior).
 
 ## 4. Validation and Checks
 
-- [ ] 4.1 Run `uv run python project/manage.py makemigrations`, `uv run python project/manage.py migrate`, `uv run python project/manage.py check` and `uv run pytest`.
+- [x] 4.1 Run `uv run python project/manage.py makemigrations`, `uv run python project/manage.py migrate`, `uv run python project/manage.py check` and `uv run pytest`.
