@@ -14,9 +14,24 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 ]
+
+if settings.ENVIRONMENT == 'development':
+    # Browsable API and OpenAPI schema are development-only tooling.
+    # drf-spectacular is a dev dependency, so import it lazily here.
+    from drf_spectacular.views import SpectacularAPIView
+    from rest_framework.routers import DefaultRouter
+
+    router = DefaultRouter()
+
+    urlpatterns += [
+        path('api/', include(router.urls)),
+        path('api/auth/', include('rest_framework.urls')),
+        path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    ]
