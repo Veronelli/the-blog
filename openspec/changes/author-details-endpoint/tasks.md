@@ -18,4 +18,4 @@
 - [x] 3.1 Ejecutar `uv run python project/manage.py check` después de que los subgrupos anteriores tengan sus tests y corregir cualquier problema global de configuración, importación o routing.
 - [x] 3.2 Ejecutar `uv run pytest` y verificar que la suite completa pase junto con todos los tests creados dentro de los subgrupos anteriores.
 - [x] 3.3 Confirmar que no se generen cambios de modelo o migraciones, documentar la propuesta en `origin/author-details-endpoint` y mantener la autenticación de `Client` fuera de este cambio.
-- [ ] 3.4 Escribir primero tests de routing para `ENVIRONMENT=development` y `ENVIRONMENT=production`; ajustar la inclusión del router para que el endpoint esté disponible en ambos entornos sin publicar el login browsable ni el schema OpenAPI en producción.
+- [x] 3.4 Escribir primero tests de routing para `ENVIRONMENT=development` y `ENVIRONMENT=production`; ajustar la inclusión del router para que el endpoint esté disponible en ambos entornos sin publicar el login browsable ni el schema OpenAPI en producción.
