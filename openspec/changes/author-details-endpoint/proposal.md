@@ -8,6 +8,7 @@ Los consumidores externos no tienen actualmente un recurso DRF para consultar lo
 - Devolver `public_username`, `first_name`, `last_name`, `title`, `subtitle`, `specialty`, `short_description` y `photo_url` en la respuesta JSON.
 - Devolver una respuesta HTTP 404 cuando el `public_username` no corresponda a un perfil público.
 - Integrar la ruta en el enrutamiento de la API y cubrir serializer, vista, routing y respuestas principales con tests unitarios.
+- Mantener el endpoint disponible sin depender de `ENVIRONMENT`, tanto en desarrollo como en producción.
 - Crear y ejecutar los tests unitarios desde el inicio de cada grupo de implementación; queda prohibido postergar la creación de tests para una fase final.
 - Mantener la consulta por ID como una posible ampliación futura, fuera del alcance de esta entrega.
 - Mantener el modelo, el onboarding, el admin y la autenticación específica de clientes API sin cambios de comportamiento.
