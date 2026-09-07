@@ -1,6 +1,6 @@
 ## Context
 
-El proyecto usa Django 6.1 y Django REST framework. `profiles.PublicProfile` ya contiene los ocho datos solicitados, tiene un `public_username` único y no requiere cambios de esquema. `project/app/urls.py` registra actualmente un `DefaultRouter` sin recursos y solo añade la API en el entorno de desarrollo. Ver `proposal.md` y `specs/author-details-endpoint/spec.md` para la motivación y el contrato observable.
+El proyecto usa Django 6.1 y Django REST framework. `profiles.PublicProfile` ya contiene los ocho datos solicitados, tiene un `public_username` único y no requiere cambios de esquema. `project/app/urls.py` registra actualmente un `DefaultRouter` sin recursos y condiciona las rutas DRF al entorno de desarrollo. Ver `proposal.md` y `specs/author-details-endpoint/spec.md` para la motivación y el contrato observable.
 
 ## Goals / Non-Goals
 
@@ -9,6 +9,7 @@ El proyecto usa Django 6.1 y Django REST framework. `profiles.PublicProfile` ya 
 - Añadir un recurso DRF de detalle identificado por `public_username`.
 - Mantener la respuesta limitada a los campos públicos definidos por el contrato.
 - Integrar la ruta de forma compatible con el router y la configuración de URLs existente.
+- Mantener el endpoint de autor disponible en cualquier `ENVIRONMENT`, incluyendo desarrollo y producción.
 - Cubrir serialización, selección por `public_username`, acceso anónimo, 404 y el valor vacío de `photo_url`.
 
 **Non-Goals:**
@@ -34,7 +35,7 @@ La vista será de solo lectura y usará el comportamiento GET permitido por la c
 
 ### Integración de rutas
 
-El recurso se registrará dentro del `DefaultRouter` ya creado en `project/app/urls.py`, conservando el prefijo `/api/` y su disponibilidad actual condicionada al entorno de desarrollo. Si el endpoint debe estar disponible fuera de desarrollo, eso requiere una decisión separada porque modificaría el alcance de exposición de la API existente.
+El recurso se registrará dentro del `DefaultRouter` y la inclusión de sus rutas se mantendrá fuera de la condición de `ENVIRONMENT`, conservando el prefijo `/api/`. El login browsable y el schema OpenAPI seguirán siendo tooling de desarrollo; esta separación permite publicar el endpoint sin publicar esas herramientas.
 
 ### Tests sin base de datos cuando sea posible
 
@@ -43,7 +44,7 @@ Los tests seguirán el estilo pytest del repositorio. Cada subgrupo de implement
 ## Risks / Trade-offs
 
 - **Endpoint público expone los datos configurados como públicos** → Limitar estrictamente el serializer a ocho campos y revisar que no incluya relaciones o datos de autenticación.
-- **La ruta solo se registra en desarrollo por la configuración actual** → Documentar y probar el comportamiento dentro del entorno soportado; cualquier promoción a producción queda fuera de este cambio.
+- **Exposición accidental de tooling en producción** → Mantener `rest_framework.urls` y el schema OpenAPI dentro de la condición de desarrollo; solo el router de recursos públicos será común a todos los entornos.
 - **Los nombres públicos también pueden ser enumerados** → El `public_username` es un dato público y único; esta entrega evita exponer el ID interno, pero no pretende resolver por sí sola la enumeración de nombres. Autenticación, rate limiting o controles adicionales quedan para un cambio posterior.
 - **La autenticación de `Client` no está conectada a DRF** → Mantenerla fuera de alcance y planificarla como cambio independiente si los consumidores requieren acceso autenticado o autorización por dominio.
 

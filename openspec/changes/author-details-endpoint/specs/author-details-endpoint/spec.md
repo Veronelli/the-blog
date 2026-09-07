@@ -37,6 +37,20 @@ El recurso SHALL permitir la consulta GET sin exigir una sesión de usuario aute
 - **WHEN** un consumidor intenta consultar el recurso usando el ID interno del perfil
 - **THEN** el sistema no trata ese valor como criterio alternativo de búsqueda en esta entrega
 
+### Requirement: Disponibilidad independiente del entorno
+
+El endpoint de detalles públicos SHALL estar disponible bajo `/api/` sin depender del valor de `ENVIRONMENT`, tanto en desarrollo como en producción. La disponibilidad del endpoint no SHALL implicar que el login browsable o el schema OpenAPI deban publicarse fuera del entorno de desarrollo.
+
+#### Scenario: Endpoint disponible en producción
+
+- **WHEN** la aplicación se ejecuta con `ENVIRONMENT=production` y un consumidor solicita un `public_username` existente
+- **THEN** el sistema resuelve el endpoint y responde con los datos públicos del autor
+
+#### Scenario: Endpoint disponible en desarrollo
+
+- **WHEN** la aplicación se ejecuta con `ENVIRONMENT=development` y un consumidor solicita un `public_username` existente
+- **THEN** el sistema resuelve el mismo endpoint bajo `/api/`
+
 ### Requirement: Tratamiento de campos opcionales
 
 El sistema SHALL representar `photo_url` con el valor almacenado en el perfil, incluyendo una cadena vacía cuando el perfil no tenga una URL de foto configurada, sin reemplazarla por una URL generada o por datos privados del usuario.
