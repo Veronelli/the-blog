@@ -1,39 +1,26 @@
 # Repository Guide
 
-## Django
+## Project
 
-- Use `uv`; install/sync dependencies with `uv sync` and run every Django command from the repository root as `uv run python project/manage.py <command>`.
-- The Django settings package is `project/app`, but its import name is `app` (`DJANGO_SETTINGS_MODULE=app.settings`). Run commands through `project/manage.py`; do not invoke `django-admin` from the repository root.
-- The local SQLite database is `project/db.sqlite3` (derived from `project/app/settings.py`) and is ignored. Apply model changes with `uv run python project/manage.py makemigrations` followed by `uv run python project/manage.py migrate`.
-- Run focused verification with `uv run pytest`. Always run `uv run python project/manage.py check` before handing off a Django change.
+- Requires Python 3.14+ and `uv`; run `uv sync` from the repository root.
+- Run Django commands from the root as `uv run python project/manage.py <command>`. The settings module is `app.settings`, while the package is `project/app`; do not invoke `django-admin` from the root.
+- The default database is the ignored SQLite file `project/db.sqlite3`. For model changes, run `uv run python project/manage.py makemigrations` followed by `uv run python project/manage.py migrate`.
+- Project configuration is in `project/app`; domain apps are `project/posts`, `project/profiles`, and `project/clients`. API routes are registered in `project/app/urls.py`.
 
-## Testing
+## Tests
 
-- Write tests with **pytest vanilla**. Avoid `@pytest.mark.django_db` unless persistence is strictly required.
-- Mock Django ORM calls and `django.db.models.Model.save` to keep tests database-free. Shared test builders live under `project/tests/unit_test/functions/_<module>.py`; model-specific mocks under `project/tests/unit_test/mocks/<app>/`.
-
-## Git And Commits
-
-- **Never commit, push, rebase, or perform any git mutation without explicit user approval for that specific action.** A confirmation given earlier in the conversation does not authorize a later mutation; ask again each time.
-- The `git-commit` skill owns the commit workflow; preserve and use it instead of duplicating its procedure here. Do not commit secrets or bypass hooks.
-
-## Local OpenCode Skills
-
-- The repository has one local skill: `git-pull-request-creator` at `.opencode/skills/git-pull-request-creator/SKILL.md`.
-- Use it only when explicitly asked to inspect or configure a pull-request or merge-request template. It reads templates but must not create PRs, commits, branches, or other artifacts.
-- When a skill covers a workflow, follow that skill and do not duplicate or override its instructions in `AGENTS.md`.
-
-## Branches And PRs
-
-- Features follow the OpenSpec workflow. Branch naming conventions in this repo are mixed; **confirm the exact naming scheme with the user** before creating branches.
-- Common patterns seen:
-  - Parent integration branch: `feature/<change-name>` or `origin/<change-name>`.
-  - Child task branches: `feature/<change-name>/<task-name>` or `origin/<change-name>/<task-name>`.
-- Child PRs target the parent branch, never `develop`. Merge child PRs into the parent, then open a single feature PR from the parent to `develop`.
-- Do not assume branch names; use exactly what the user specifies.
+- Pytest uses `DJANGO_SETTINGS_MODULE=app.settings`, adds `project` to `PYTHONPATH`, and uses importlib mode from `pyproject.toml`; test files named `test_*.py` are discovered recursively under the repository test root.
+- Organize unit tests by application under `project/tests/unit_test/<app>/`, keeping each test next to the behavior it covers.
+- Put serializer tests in `project/tests/unit_test/<app>/serializer/` and name them after the serializer or model, such as `test_public_profile.py`. Create this subdirectory only for an application that has a `serializers.py` module.
+- Put shared test builders in `project/tests/unit_test/functions/`, reusable fixtures in `project/tests/unit_test/fixtures/`, and application-specific mocks in `project/tests/unit_test/mocks/<app>/`.
+- Prefer database-free pytest tests: build model instances in memory and mock ORM managers or `Model.save`; use `@pytest.mark.django_db` only when persistence is required.
+- Run all tests with `uv run pytest`, one application with `uv run pytest project/tests/unit_test/profiles`, one subfolder with `uv run pytest project/tests/unit_test/profiles/serializer`, or one file by passing its path. Use `uv run pytest -k <expression>` for selection by name.
+- Before handing off Django changes, run `uv run python project/manage.py check` and the relevant tests; run the full suite for cross-application changes.
 
 ## OpenSpec
 
-- Treat each special feature as an OpenSpec change. Before implementation, create its complete proposal, design, specs, and `tasks.md` using the repository's OpenSpec skills.
-- In `design.md`, list **Non-Goals** that are real scope decisions for the change. Do not include generic presentation layers such as Swagger UI, API documentation sites, or similar tooling unless they are explicitly part of the request.
-- When archiving a completed change, sync its delta specs to `openspec/specs/<capability>/spec.md` before moving the change directory to `openspec/changes/archive/`.
+- Feature work uses the `spec-driven` workflow configured in `openspec/config.yaml`. Keep proposal, design, delta specs, and `tasks.md` together under `openspec/changes/`.
+- Include unit-test work in the implementation subgroup that introduces the behavior; do not defer tests to a final phase.
+- Validate archived changes with `openspec validate --archived --strict`.
+- Before archiving a completed change, merge delta specs into `openspec/specs/<capability>/spec.md`; archived changes belong under `openspec/changes/archive/`.
+- Put real scope decisions in `design.md` under Non-Goals; do not add generic tooling unless requested.
