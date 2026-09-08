@@ -1,33 +1,38 @@
 # Repository Guide
 
-## Django
+## Project
 
-- Use `uv`; install/sync dependencies with `uv sync` and run every Django command from the repository root as `uv run python project/manage.py <command>`.
-- The Django settings package is `project/app`, but its import name is `app` (`DJANGO_SETTINGS_MODULE=app.settings`). Run commands through `project/manage.py`; do not invoke `django-admin` from the repository root.
-- The local SQLite database is `project/db.sqlite3` (derived from `project/app/settings.py`) and is ignored. Apply model changes with `uv run python project/manage.py makemigrations` followed by `uv run python project/manage.py migrate`.
-- Run focused verification with `uv run pytest`. Always run `uv run python project/manage.py check` before handing off a Django change.
+- This is a Django 6.1 project requiring Python >= 3.14; dependencies are managed with `uv` and the lockfile is `uv.lock`.
+- Run commands from the repository root. `project/manage.py` sets `DJANGO_SETTINGS_MODULE=app.settings`; the configuration package is `project/app`, but its import name is `app`.
+- Main Django apps live in `project/posts`, `project/profiles`, and `project/clients`; project wiring is in `project/app/settings.py` and `project/app/urls.py`.
+- The default database is SQLite at `project/db.sqlite3` and is derived from `project/app/settings.py`; it is local state, not a source file.
+- DRF routes, browsable API, and the development OpenAPI schema are currently registered only when `ENVIRONMENT=development`.
+
+## Commands
+
+- Install or refresh dependencies with `uv sync`; prefer `uv run` instead of manually activating a virtualenv.
+- Run Django commands only as `uv run python project/manage.py <command>`; do not invoke `django-admin` from the repository root.
+- Start development with `uv run python project/manage.py migrate` followed by `uv run python project/manage.py runserver`.
+- Run all tests with `uv run pytest`; run one file with `uv run pytest project/tests/unit_test/<path>/test_<name>.py` or select tests with `uv run pytest -k <expression>`.
+- Before handing off a Django change, run `uv run python project/manage.py check` and the relevant pytest tests; run the full suite for cross-app changes.
+- For model changes, run `uv run python project/manage.py makemigrations` and then `uv run python project/manage.py migrate`.
 
 ## Testing
 
-- Write tests with **pytest vanilla**. Avoid `@pytest.mark.django_db` unless persistence is strictly required.
-- Mock Django ORM calls and `django.db.models.Model.save` to keep tests database-free. Shared test builders live under `project/tests/unit_test/functions/_<module>.py`; model-specific mocks under `project/tests/unit_test/mocks/<app>/`.
+- Use function-based pytest tests in `project/tests/unit_test/`; pytest is configured with `DJANGO_SETTINGS_MODULE=app.settings` and `pythonpath = ["project"]`.
+- Keep tests database-free by default. Mock ORM managers and `Model.save`; use `@pytest.mark.django_db` only when persistence is strictly required.
+- Shared builders belong in `project/tests/unit_test/functions/_<module>.py`; app-specific mocks belong in `project/tests/unit_test/mocks/<app>/`.
+- Every OpenSpec implementation subgroup must create its unit tests before or alongside its implementation. Do not defer test creation to a final testing phase.
 
-## Git And Commits
+## OpenSpec And Branches
 
-- **Never commit, push, rebase, or perform any git mutation without explicit user approval for that specific action.** A confirmation given earlier in the conversation does not authorize a later mutation; ask again each time.
-- Use the local `git-commit` skill for every commit. It requires inspecting the diff/status, staging only the logical change, and using a Conventional Commit message. Do not commit secrets or bypass hooks.
+- Treat each feature as an OpenSpec change. Before implementation, create proposal, design, specs, and `tasks.md`; include real **Non-Goals** in `design.md`.
+- Keep OpenSpec tasks grouped by independently implementable subgroups, and include unit-test work in each subgroup from the start.
+- For the repository workflow, proposal work uses `origin/<change_name>` and each implementation subgroup uses `feature/<change_name>/<subgroup>`; do not create or rename branches without explicit user approval.
+- Do not implement application code during proposal/update planning workflows; use `/opsx-apply` only after the artifacts are approved.
+- When archiving, sync delta specs into `openspec/specs/<capability>/spec.md` before moving the change to `openspec/changes/archive/`.
 
-## Branches And PRs
+## Git
 
-- Features follow the OpenSpec workflow. Branch naming conventions in this repo are mixed; **confirm the exact naming scheme with the user** before creating branches.
-- Common patterns seen:
-  - Parent integration branch: `feature/<change-name>` or `origin/<change-name>`.
-  - Child task branches: `feature/<change-name>/<task-name>` or `origin/<change-name>/<task-name>`.
-- Child PRs target the parent branch, never `develop`. Merge child PRs into the parent, then open a single feature PR from the parent to `develop`.
-- Do not assume branch names; use exactly what the user specifies.
-
-## OpenSpec
-
-- Treat each special feature as an OpenSpec change. Before implementation, create its complete proposal, design, specs, and `tasks.md` using the repository's OpenSpec skills.
-- In `design.md`, list **Non-Goals** that are real scope decisions for the change. Do not include generic presentation layers such as Swagger UI, API documentation sites, or similar tooling unless they are explicitly part of the request.
-- When archiving a completed change, sync its delta specs to `openspec/specs/<capability>/spec.md` before moving the change directory to `openspec/changes/archive/`.
+- Never commit, push, rebase, or otherwise mutate git without explicit approval for that specific action.
+- Before any approved commit, inspect status and diff, stage only the logical change, and use the repository's `git-commit` skill with a Conventional Commit message. Never commit secrets or bypass hooks.
