@@ -28,6 +28,7 @@ develop = [
 pythonpath = ["project"]
 addopts = "--import-mode=importlib"
 DJANGO_SETTINGS_MODULE = "app.settings"
+testpaths = ["project/tests"]
 
 [tool.coverage.run]
 omit = [

@@ -15,6 +15,7 @@ class PublicProfileSerializer(serializers.ModelSerializer):
             "specialty",
             "short_description",
             "photo_url",
+            "fullname",
         )
 
     fullname = serializers.SerializerMethodField()
