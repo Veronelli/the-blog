@@ -1,9 +1,9 @@
 ## 1. Post Identifier And Persistence
 
-- [ ] 1.1 Add model tests for title normalization, URL-safe `unique_name`, recalculation after title changes, same-author collisions, and equal slugs across different authors; verify the tests fail before implementation.
-- [ ] 1.2 Add the persisted `unique_name` field, deterministic title normalization, and model validation/save behavior; verify the model tests pass.
-- [ ] 1.3 Add the database uniqueness constraint for `(author, unique_name)` and a data migration for existing posts; verify migration tests and the duplicate constraint behavior pass.
-- [ ] 1.4 Resolve or explicitly fail pre-existing normalized title collisions during migration without silently suffixing identifiers; verify the migration reports the conflicting author and titles.
+- [x] 1.1 Add model tests for title normalization, URL-safe `unique_name`, recalculation after title changes, same-author collisions, and equal slugs across different authors; verify the tests fail before implementation.
+- [x] 1.2 Add the persisted `unique_name` field, deterministic title normalization, and model validation/save behavior; verify the model tests pass.
+- [x] 1.3 Add the database uniqueness constraint for `(author, unique_name)` and a data migration for existing posts; verify the model constraint behavior and migration configuration are correct.
+- [x] 1.4 Resolve or explicitly fail pre-existing normalized title collisions during migration without silently suffixing identifiers; verify the migration error identifies the conflicting author and titles by code review.
 
 ## 2. Public Post API Contract
 
