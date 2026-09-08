@@ -16,3 +16,8 @@ class PublicProfileSerializer(serializers.ModelSerializer):
             "short_description",
             "photo_url",
         )
+
+    fullname = serializers.SerializerMethodField()
+
+    def get_fullname(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
