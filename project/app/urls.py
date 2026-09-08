@@ -17,21 +17,24 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from profiles.views import PublicProfileViewSet
+
+router = DefaultRouter()
+router.register('authors', PublicProfileViewSet, basename='author')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
 ]
 
 if settings.ENVIRONMENT == 'development':
     # Browsable API and OpenAPI schema are development-only tooling.
     # drf-spectacular is a dev dependency, so import it lazily here.
     from drf_spectacular.views import SpectacularAPIView
-    from rest_framework.routers import DefaultRouter
-
-    router = DefaultRouter()
 
     urlpatterns += [
-        path('api/', include(router.urls)),
         path('api/auth/', include('rest_framework.urls')),
         path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     ]

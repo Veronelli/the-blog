@@ -3,7 +3,7 @@ import importlib
 import pytest
 from django.conf import settings
 from django.test import override_settings
-from django.urls import resolve
+from django.urls import Resolver404, clear_url_caches, resolve
 
 from app import urls
 
@@ -25,13 +25,19 @@ def test_openapi_schema_resolves_in_development():
 
 
 @override_settings(ENVIRONMENT='production')
-def test_api_routes_not_resolved_in_production():
+def test_public_api_route_resolves_in_production():
     # urls.py reads settings.ENVIRONMENT at import time, so reload it in production mode.
     importlib.reload(urls)
+    clear_url_caches()
     try:
-        # The only production URL should be the admin.
-        assert len(urls.urlpatterns) == 1
-        assert any('admin/' in str(p.pattern) for p in urls.urlpatterns)
+        resolved = resolve('/api/authors/test-user/')
+        assert resolved.url_name == 'author-detail'
+
+        with pytest.raises(Resolver404):
+            resolve('/api/auth/login/')
+        with pytest.raises(Resolver404):
+            resolve('/api/schema/')
     finally:
         # Restore the development URL configuration for subsequent tests.
         importlib.reload(urls)
+        clear_url_caches()

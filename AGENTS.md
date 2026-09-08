@@ -15,7 +15,13 @@
 ## Git And Commits
 
 - **Never commit, push, rebase, or perform any git mutation without explicit user approval for that specific action.** A confirmation given earlier in the conversation does not authorize a later mutation; ask again each time.
-- Use the local `git-commit` skill for every commit. It requires inspecting the diff/status, staging only the logical change, and using a Conventional Commit message. Do not commit secrets or bypass hooks.
+- The `git-commit` skill owns the commit workflow; preserve and use it instead of duplicating its procedure here. Do not commit secrets or bypass hooks.
+
+## Local OpenCode Skills
+
+- The repository has one local skill: `git-pull-request-creator` at `.opencode/skills/git-pull-request-creator/SKILL.md`.
+- Use it only when explicitly asked to inspect or configure a pull-request or merge-request template. It reads templates but must not create PRs, commits, branches, or other artifacts.
+- When a skill covers a workflow, follow that skill and do not duplicate or override its instructions in `AGENTS.md`.
 
 ## Branches And PRs
 
