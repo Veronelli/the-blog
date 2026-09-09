@@ -7,8 +7,8 @@
 
 ## 2. Public Post API Contract
 
-- [ ] 2.1 Add serializer tests asserting the exact public response fields and exclusion of user/account and unrelated relationship data; verify the serializer tests pass.
-- [ ] 2.2 Implement the explicit read serializer for `unique_name`, title, content, timestamps, and author `public_username`; verify collection and detail serialization use the same shape.
+- [x] 2.1 Add serializer tests for the exact collection summary fields, complete detail fields, exclusion of user/account data, and a 256-character preview; verify the serializer tests pass.
+- [x] 2.2 Implement distinct collection and detail serializers, with the collection queryset generating `content_preview` through a database substring expression limited to 256 characters; verify each response uses its defined shape without loading full content for the collection preview.
 - [ ] 2.3 Add endpoint tests for anonymous collection and detail GET requests, missing profiles/posts, cross-author slug mismatches, and unsupported write methods; verify expected HTTP statuses and unchanged data.
 - [ ] 2.4 Implement public read-only views scoped first by `public_username` and then by `unique_name`; verify endpoint tests pass and no global ID lookup is used.
 
