@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.text import slugify
 
+from posts.query_set import PostQuerySet
+
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
@@ -14,6 +16,8 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         related_name="posts",
     )
+
+    objects = PostQuerySet.as_manager()
 
     class Meta:
         constraints = [
