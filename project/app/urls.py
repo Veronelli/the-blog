@@ -17,12 +17,8 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
 
-from profiles.views import PublicProfileViewSet
-
-router = DefaultRouter()
-router.register('authors', PublicProfileViewSet, basename='author')
+from app.router import router
 
 urlpatterns = [
     path('admin/', admin.site.urls),
