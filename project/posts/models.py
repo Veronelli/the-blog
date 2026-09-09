@@ -17,7 +17,7 @@ class Post(models.Model):
         related_name="posts",
     )
 
-    objects = PostQuerySet.as_manager()
+    objects = PostQuerySet.as_manager()  # pyright: ignore[reportCallIssue]
 
     class Meta:
         constraints = [

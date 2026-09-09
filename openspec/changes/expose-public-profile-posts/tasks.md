@@ -9,12 +9,12 @@
 
 - [x] 2.1 Add serializer tests for the exact collection summary fields, complete detail fields, exclusion of user/account data, and a 256-character preview; verify the serializer tests pass.
 - [x] 2.2 Implement distinct collection and detail serializers, with the collection queryset generating `content_preview` through a database substring expression limited to 256 characters; verify each response uses its defined shape without loading full content for the collection preview.
-- [ ] 2.3 Add endpoint tests for anonymous collection and detail GET requests, missing profiles/posts, cross-author slug mismatches, and unsupported write methods; verify expected HTTP statuses and unchanged data.
-- [ ] 2.4 Implement public read-only views scoped first by `public_username` and then by `unique_name`; verify endpoint tests pass and no global ID lookup is used.
+- [x] 2.3 Add endpoint tests for anonymous collection and detail GET requests, missing profiles/posts, cross-author slug mismatches, and unsupported write methods; verify expected HTTP statuses and unchanged data.
+- [x] 2.4 Implement public read-only views scoped first by `public_username` and then by `unique_name`; verify endpoint tests pass and no global ID lookup is used.
 
 ## 3. Routing And Integration
 
-- [ ] 3.1 Add routing tests for `/api/authors/<public_username>/posts/` and `/api/authors/<public_username>/posts/<unique_name>/`, including trailing-slash behavior; verify both routes resolve to the intended views.
-- [ ] 3.2 Register the nested post routes alongside the existing public author routes while keeping development-only login and schema routes environment-gated; verify routing tests pass in development and production-style settings.
-- [ ] 3.3 Run `uv run python project/manage.py check` and the relevant posts/API test directories; verify no configuration, import, migration, or routing errors remain.
-- [ ] 3.4 Run `uv run pytest` for the complete suite and verify all existing author endpoint behavior remains passing.
+- [x] 3.1 Add routing tests for `/api/authors/<public_username>/posts/` and `/api/authors/<public_username>/posts/<unique_name>/`, including trailing-slash behavior; verify both routes resolve to the intended views.
+- [x] 3.2 Register the nested post routes alongside the existing public author routes while keeping development-only login and schema routes environment-gated; verify routing tests pass in development and production-style settings.
+- [x] 3.3 Run `uv run python project/manage.py check` and the relevant posts/API test directories; verify no configuration, import, migration, or routing errors remain.
+- [x] 3.4 Run `uv run pytest` for the complete suite and verify all existing author endpoint behavior remains passing.

@@ -32,6 +32,10 @@ def test_public_api_route_resolves_in_production():
     try:
         resolved = resolve('/api/authors/test-user/')
         assert resolved.url_name == 'author-detail'
+        resolved = resolve('/api/authors/test-user/posts/')
+        assert resolved.url_name == 'author-post-list'
+        resolved = resolve('/api/authors/test-user/posts/test-post/')
+        assert resolved.url_name == 'author-post-detail'
 
         with pytest.raises(Resolver404):
             resolve('/api/auth/login/')
