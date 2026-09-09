@@ -31,9 +31,9 @@ Existing rows require a data migration that derives identifiers from their title
 
 Expose collection and detail routes under `/api/authors/<public_username>/posts/`. The view queryset first resolves the public profile and then scopes posts to it; detail lookup uses `unique_name` inside that scoped queryset. This prevents a valid slug belonging to another author from being returned. A nested route was chosen over a global `/posts/<unique_name>/` route because the identifier is intentionally unique per author, not globally.
 
-### Use explicit read serializers
+### Use distinct read serializers and database previews
 
-Use an explicit serializer for the post response with `unique_name`, title, content, timestamps, and the author's `public_username`. Do not serialize the complete model or the related user. The same response shape is used for collection and detail to keep links predictable.
+Use separate explicit serializers for the collection and detail responses. The collection serializer exposes `unique_name`, title, `content_preview`, `created_at`, and `author_full_name`; the detail serializer exposes the complete content and the public author identity. The collection queryset will annotate `content_preview` with a database substring expression limited to 256 characters before serialization, so it never selects complete post bodies merely to truncate them in Python. Do not serialize the complete model or the related user.
 
 ### Keep public routes independent of environment
 
@@ -41,13 +41,13 @@ Register the post routes alongside the existing public author route, outside the
 
 ### Test behavior at the smallest useful boundary
 
-Place model and serializer tests under the posts unit-test area, using in-memory instances or mocked managers when persistence is unnecessary. Use database-backed tests only for migration/constraint and ORM lookup behavior. Add routing and endpoint tests for both author collection and nested detail, including a cross-author slug mismatch and production-style URL registration.
+Place model and serializer tests under the posts unit-test area, using in-memory instances or mocked managers when persistence is unnecessary. Test the collection serializer's exact summary fields and assert the queryset annotates the preview through a database substring expression limited to 256 characters. Use database-backed tests only for migration/constraint and ORM lookup behavior. Add routing and endpoint tests for both author collection and nested detail, including a cross-author slug mismatch and production-style URL registration.
 
 ## Risks / Trade-offs
 
 - **Existing titles can normalize to duplicate identifiers** -> Run the data migration transactionally and fail with an actionable conflict instead of silently changing links.
 - **Title edits can break existing article URLs** -> Treat the derived identifier as title-coupled per the requested behavior; link stability across title edits can be addressed by a future immutable alias capability.
-- **Public posts expose article content** -> Limit the serializer to the explicitly public post contract and do not include user/account fields or social-network relations.
+- **Public listings load article content unnecessarily** -> Produce the 256-character preview in the database query and serialize only that annotation; reserve full content for the detail resource.
 - **Concurrent creates can race before model validation** -> Keep the database uniqueness constraint authoritative and translate integrity failures into the API/model validation behavior selected during implementation.
 
 ## Migration Plan
