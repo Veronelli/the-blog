@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${DJANGO_PORT:-8000}:${DJANGO_PORT:-8000}"
+    volumes:
+      - .:/app
+      - python-venv:/app/.venv
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-container-development-only}
+      DEBUG: ${DEBUG:-False}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+      DJANGO_PORT: ${DJANGO_PORT:-8000}
+volumes:
+  python-venv:
