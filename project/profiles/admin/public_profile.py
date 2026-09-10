@@ -34,20 +34,25 @@ class PublicProfileAdmin(admin.ModelAdmin):
     add_form_template = "admin/profiles/publicprofile/change_form.html"
     change_form_template = "admin/profiles/publicprofile/change_form.html"
 
-    def get_form(self, request: HttpRequest, obj=None, **kwargs):
-        form_class = super().get_form(request, obj, **kwargs)
+    def get_form(
+        self,
+        request: HttpRequest,
+        obj: PublicProfile | None = None,
+        change: bool = False,
+        **kwargs,
+    ):
+        form_class = super().get_form(request, obj, change, **kwargs)
 
-        class BoundPublicProfileForm(form_class):
-            def __init__(inner_self, *args, **inner_kwargs):
-                inner_kwargs["user"] = request.user
-                super().__init__(*args, **inner_kwargs)
+        def __init__(inner_self, *args, **inner_kwargs):
+            inner_kwargs["user"] = getattr(request, "user")
+            form_class.__init__(inner_self, *args, **inner_kwargs)
 
-        return BoundPublicProfileForm
+        return type("BoundPublicProfileForm", (form_class,), {"__init__": __init__})
 
     def get_queryset(self, request: HttpRequest):
-        if request is None or not request.user.is_authenticated:
+        if request is None or not getattr(request, "user").is_authenticated:
             return super().get_queryset(request).none()
-        return super().get_queryset(request).filter(user_id=request.user.id)
+        return super().get_queryset(request).filter(user_id=getattr(getattr(request, "user"), "id"))
 
     def has_module_permission(self, request: HttpRequest) -> bool:
         user = getattr(request, "user", None)
@@ -67,7 +72,7 @@ class PublicProfileAdmin(admin.ModelAdmin):
             return False
         if obj is None:
             return PublicProfile.objects.filter(user_id=user.id).exists()
-        return obj.user_id == user.id
+        return getattr(obj, "user_id") == user.id
 
     def has_view_permission(
         self, request: HttpRequest, obj: PublicProfile | None = None

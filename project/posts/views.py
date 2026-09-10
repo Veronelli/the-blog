@@ -1,6 +1,8 @@
+from posts.query_set import PostQuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
+from typing import cast
 
 from posts.models import Post
 from posts.serializers import PostDetailSerializer, PostListSerializer
@@ -17,7 +19,10 @@ class PublicProfilePostViewSet(viewsets.ReadOnlyModelViewSet):
             PublicProfile,
             public_username=self.kwargs["public_username"],
         )
-        queryset = Post.objects.filter(author=author).select_related("author")
+        queryset = cast(
+            PostQuerySet,
+            Post.objects.filter(author=author).select_related("author"),
+        )
         if self.action == "list":
             return queryset.with_content_preview().order_by("pk")
         return queryset
