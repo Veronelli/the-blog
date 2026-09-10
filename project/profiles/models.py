@@ -128,13 +128,10 @@ class SocialNetworkInstance(models.Model):
         self._ensure_variable_instances_match_config()
 
     def _active_variable_instances(self) -> models.QuerySet["VariableInstance"]:
-        return VariableInstance.objects.filter(
-            social_network_instance=self,
-            archived=False,
-        )
+        return getattr(self, "variable_instances").filter(archived=False)
 
     def _iter_variable_instances(self) -> models.QuerySet["VariableInstance"]:
-        return VariableInstance.objects.filter(social_network_instance=self)
+        return getattr(self, "variable_instances").all()
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.pk is not None:
@@ -149,9 +146,12 @@ class SocialNetworkInstance(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
+            protected_objects: set[models.Model] = set()
+            if self.pk is not None:
+                protected_objects.add(self)
             raise models.ProtectedError(
                 "Archived social network instances cannot be deleted.",
-                {self},
+                protected_objects,
             )
         return super().delete(*args, **kwargs)
 
@@ -246,8 +246,11 @@ class VariableInstance(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
+            protected_objects: set[models.Model] = set()
+            if self.pk is not None:
+                protected_objects.add(self)
             raise models.ProtectedError(
-                "Archived variable instances cannot be deleted.", {self}
+                "Archived variable instances cannot be deleted.", protected_objects
             )
         return super().delete(*args, **kwargs)
 
