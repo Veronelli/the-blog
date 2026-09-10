@@ -1,4 +1,5 @@
 from django.conf import settings
+from drf_spectacular.generators import SchemaGenerator
 
 
 def test_rest_framework_is_installed():
@@ -33,3 +34,17 @@ def test_rest_framework_renderer_defaults():
 
 def test_environment_defaults_to_development():
     assert settings.ENVIRONMENT == 'development'
+
+
+def test_openapi_schema_documents_public_author_routes():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+
+    assert "/api/authors/{public_username}/" in schema["paths"]
+    assert "/api/authors/{public_username}/posts/" in schema["paths"]
+    assert "/api/authors/{public_username}/posts/{unique_name}/" in schema["paths"]
+    assert schema["servers"] == [
+        {
+            "url": "http://localhost:8000",
+            "description": "Current environment",
+        }
+    ]

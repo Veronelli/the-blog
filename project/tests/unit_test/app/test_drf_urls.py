@@ -24,6 +24,18 @@ def test_openapi_schema_resolves_in_development():
     assert resolved.url_name == 'schema'
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/authors/test-user.json",
+        "/api/authors/test-user/posts.json",
+    ],
+)
+def test_api_routes_do_not_accept_format_suffixes(path: str):
+    with pytest.raises(Resolver404):
+        resolve(path)
+
+
 @override_settings(ENVIRONMENT='production')
 def test_public_api_route_resolves_in_production():
     # urls.py reads settings.ENVIRONMENT at import time, so reload it in production mode.

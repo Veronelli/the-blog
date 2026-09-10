@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'posts',
     'profiles',
     'clients',
@@ -59,6 +60,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -66,6 +68,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'OpenAPI schema for the-blog REST API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    "SERVERS": [
+        {
+            "url": os.getenv("API_BASE_URL", "http://localhost:8000"),
+            "description": "Current environment",
+        },
+    ],
 }
 
 MIDDLEWARE = [
