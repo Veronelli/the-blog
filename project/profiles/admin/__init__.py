@@ -1,3 +1,4 @@
+from typing import Any
 from django import forms
 from django.contrib import admin
 
@@ -18,7 +19,7 @@ class SocialNetworkConfigForm(forms.ModelForm):
         fields = ("name", "template_url", "icon_url", "variables")
 
     def clean(self) -> dict:
-        cleaned_data = super().clean()
+        cleaned_data: dict[str, Any] = super().clean() or {}
         template_url = cleaned_data.get("template_url", "") or ""
         variables = cleaned_data.get("variables") or []
         placeholders = set(_extract_placeholders(template_url))

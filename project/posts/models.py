@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.db import models
 from django.utils.text import slugify
 
@@ -17,7 +19,7 @@ class Post(models.Model):
         related_name="posts",
     )
 
-    objects = PostQuerySet.as_manager()  # pyright: ignore[reportCallIssue]
+    objects = PostQuerySet.as_manager()
 
     class Meta:
         constraints = [
@@ -27,7 +29,7 @@ class Post(models.Model):
             ),
         ]
 
-    def save(self, *args: object, **kwargs: object) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         self.unique_name = slugify(self.title)
         self.full_clean()
         super().save(*args, **kwargs)

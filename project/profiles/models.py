@@ -1,6 +1,6 @@
 import re
 from functools import cached_property
-from typing import Any
+from typing import Any, Self
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -45,7 +45,7 @@ class SocialNetworkConfig(models.Model):
     name = models.CharField(max_length=64, unique=True)
     template_url = models.CharField(max_length=255)
     icon_url = models.CharField(max_length=255)
-    variables: "models.ManyToManyField[Variable, SocialNetworkConfig]" = models.ManyToManyField(
+    variables = models.ManyToManyField(
         Variable, related_name="configs"
     )
     archived = models.BooleanField(default=False)
@@ -127,11 +127,11 @@ class SocialNetworkInstance(models.Model):
         super().clean()
         self._ensure_variable_instances_match_config()
 
-    def _active_variable_instances(self) -> Any:
-        return self.variable_instances.filter(archived=False)
+    def _active_variable_instances(self) -> models.QuerySet["VariableInstance"]:
+        return getattr(self, "variable_instances").filter(archived=False)
 
-    def _iter_variable_instances(self) -> Any:
-        return self.variable_instances.all()
+    def _iter_variable_instances(self) -> models.QuerySet["VariableInstance"]:
+        return getattr(self, "variable_instances").all()
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.pk is not None:
@@ -146,14 +146,17 @@ class SocialNetworkInstance(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
+            protected_objects: set[models.Model] = set()
+            if self.pk is not None:
+                protected_objects.add(self)
             raise models.ProtectedError(
                 "Archived social network instances cannot be deleted.",
-                [self],
+                protected_objects,
             )
         return super().delete(*args, **kwargs)
 
     def _ensure_variable_instances_match_config(self) -> None:
-        if not self.config_id:
+        if not getattr(self, "config_id"):
             return
         config_variable_identifiers = {
             variable.identifier for variable in self.config._associated_variables()
@@ -193,7 +196,7 @@ class SocialNetworkInstance(models.Model):
     def _ensure_author_preserved(self, state: dict[str, Any] | None) -> None:
         if not state:
             return
-        if state.get("author_id") != self.author_id:
+        if state.get("author_id") != getattr(self, "author_id"):
             raise ValidationError(
                 {
                     "author": (
@@ -243,8 +246,11 @@ class VariableInstance(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         if self.archived:
+            protected_objects: set[models.Model] = set()
+            if self.pk is not None:
+                protected_objects.add(self)
             raise models.ProtectedError(
-                "Archived variable instances cannot be deleted.", [self]
+                "Archived variable instances cannot be deleted.", protected_objects
             )
         return super().delete(*args, **kwargs)
 
@@ -290,6 +296,8 @@ class VariableInstance(models.Model):
 
 
 class PublicProfile(models.Model):
+    objects = models.Manager()
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -323,10 +331,10 @@ class PublicProfile(models.Model):
             .values_list("user_id", flat=True)
             .first()
         )
-        if current_user_id is not None and current_user_id != self.user_id:
+        if current_user_id is not None and current_user_id != getattr(self, "user_id"):
             raise ValidationError(
                 {"user": "The user of a public profile cannot change."}
             )
 
-    def __str__(self) -> str:
+    def __str__(self: "PublicProfile") -> str:
         return self.public_username

@@ -56,7 +56,7 @@ class GrafanaLokiService(BaseLogService):
             ValueError: If ``level`` is not a ``LogLevel`` value.
             LogDeliveryError: If the HTTP request fails or Loki rejects it.
         """
-        if not isinstance(level, LogLevel): #  type: ignore
+        if not isinstance(level, LogLevel):
             raise ValueError("level must be a LogLevel value.")
 
         values: list[dict[str, str] | str] = [
