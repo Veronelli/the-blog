@@ -14,6 +14,7 @@ wheels/
 
 # Django local database
 db.sqlite3
+project/staticfiles/
 
 # SKILLS
 .opencode/skills

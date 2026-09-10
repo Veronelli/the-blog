@@ -6,6 +6,7 @@ Proyecto de blog construido con **Django 6.1** y gestionado con **uv**.
 
 - Python >= 3.14
 - [uv](https://docs.astral.sh/uv/)
+- Docker con Docker Compose (para ejecutar el entorno aislado)
 
 ## Instalación
 
@@ -27,6 +28,58 @@ uv run python project/manage.py runserver
 ```
 
 El servidor estará disponible en <http://127.0.0.1:8000/>.
+
+## Docker Compose
+
+El entorno en contenedor no requiere Python, uv ni un gestor de paquetes en el host.
+La imagen Alpine incluye Git, Python y uv; Django se sirve mediante `runserver`.
+El entrypoint sincroniza dependencias, aplica migraciones y recopila los archivos
+estaticos antes de ejecutar el comando del contenedor. El codigo se monta desde el
+directorio actual y el entorno virtual `.venv` vive en un volumen
+interno de Docker, por lo que no se comparte con el host.
+
+La secuencia de preparacion se define en `docker/start.sh` y se ejecuta como
+`ENTRYPOINT`; el `CMD` de la imagen ejecuta `uv run python project/manage.py runserver
+0.0.0.0:${DJANGO_PORT}`.
+
+```bash
+# Opcional: personalizar las variables de ejecución
+cp .env.example .env
+
+# Construir y arrancar el servicio WSGI
+docker compose up --build
+```
+
+El panel está disponible en <http://localhost:8000/admin/> y las APIs bajo
+<http://localhost:8000/api/>. Para permitir una IP o dominio externo, define
+`ALLOWED_HOSTS` con valores separados por comas y expón el puerto Docker según las
+políticas de red del host.
+
+| Variable | Valor por defecto | Descripción |
+| --- | --- | --- |
+| `SECRET_KEY` | clave de desarrollo | Clave secreta de Django; reemplazar fuera del desarrollo. |
+| `DEBUG` | `False` | Activa o desactiva el modo debug. |
+| `ENVIRONMENT` | `development` | Entorno usado por la aplicación. |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hosts permitidos, separados por comas. |
+| `API_BASE_URL` | `http://localhost:8000` | URL base expuesta en el esquema OpenAPI. |
+| `DJANGO_PORT` | `8000` | Puerto donde Django escucha y que Docker publica en el host. |
+
+Para detener el servicio, usa `docker compose down`. Para eliminar también el entorno
+virtual interno, usa `docker compose down --volumes`.
+
+Comandos habituales durante el desarrollo:
+
+```bash
+# Seguir los registros del servidor
+docker compose logs --follow app
+
+# Ejecutar comandos de Django en el contenedor en marcha
+docker compose exec app uv run python project/manage.py createsuperuser
+docker compose exec app uv run python project/manage.py makemigrations
+
+# Reconstruir despues de cambiar pyproject.toml o uv.lock
+docker compose up --build
+```
 
 ## Estructura del proyecto
 

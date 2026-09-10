@@ -9,6 +9,7 @@ dependencies = [
     "djangorestframework>=3.18.0",
     "requests>=2.34.2",
     "ruff>=0.16.6",
+    "whitenoise>=6.11.0",
 ]
 
 [dependency-groups]
