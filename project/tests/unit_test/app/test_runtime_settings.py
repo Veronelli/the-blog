@@ -20,6 +20,21 @@ def test_environment_list_uses_configured_hosts(monkeypatch):
     ]
 
 
+def test_csrf_trusted_origins_use_configured_or_default_values(monkeypatch):
+    monkeypatch.delenv("CSRF_TRUSTED_ORIGINS", raising=False)
+    assert get_env_list("CSRF_TRUSTED_ORIGINS", ("http://localhost",)) == [
+        "http://localhost"
+    ]
+
+    monkeypatch.setenv(
+        "CSRF_TRUSTED_ORIGINS", "https://blog.example.test, https://admin.example.test"
+    )
+    assert get_env_list("CSRF_TRUSTED_ORIGINS", ("http://localhost",)) == [
+        "https://blog.example.test",
+        "https://admin.example.test",
+    ]
+
+
 def test_runtime_values_use_environment_over_defaults(monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "container-secret")
     monkeypatch.setenv("DEBUG", "false")

@@ -1,3 +1,8 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from django.conf import settings
 from drf_spectacular.generators import SchemaGenerator
 
@@ -48,3 +53,29 @@ def test_openapi_schema_documents_public_author_routes():
             "description": "Current environment",
         }
     ]
+
+
+def test_production_openapi_schema_excludes_public_routes():
+    project_root = Path(__file__).parents[4]
+    environment = {
+        **os.environ,
+        "DJANGO_SETTINGS_MODULE": "app.settings",
+        "ENVIRONMENT": "production",
+        "PYTHONPATH": str(project_root / "project"),
+    }
+    command = (
+        "import django; django.setup(); "
+        "from drf_spectacular.generators import SchemaGenerator; "
+        "print(sorted(SchemaGenerator().get_schema(request=None, public=True)['paths']))"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", command],
+        cwd=project_root,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.strip() == "[]"

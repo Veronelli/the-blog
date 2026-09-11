@@ -1,3 +1,4 @@
+from django.conf import settings
 from posts.query_set import PostQuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -7,8 +8,10 @@ from typing import cast
 from posts.models import Post
 from posts.serializers import PostDetailSerializer, PostListSerializer
 from profiles.models import PublicProfile
+from drf_spectacular.utils import extend_schema
 
 
+@extend_schema(exclude=settings.ENVIRONMENT == 'production')
 class PublicProfilePostViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny,)
     lookup_field = "unique_name"

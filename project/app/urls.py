@@ -25,7 +25,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
 ]
 
-if settings.ENVIRONMENT == 'development':
+if settings.ENVIRONMENT != 'production':
     # Browsable API and OpenAPI schema are development-only tooling.
     # drf-spectacular is a dev dependency, so import it lazily here.
     from drf_spectacular.views import SpectacularAPIView
