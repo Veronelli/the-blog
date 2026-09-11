@@ -75,7 +75,11 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+        *(
+            ['rest_framework.renderers.BrowsableAPIRenderer']
+            if ENVIRONMENT == 'development'
+            else []
+        ),
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -121,6 +125,8 @@ TEMPLATES = [
         },
     },
 ]
+
+CSRF_TRUSTED_ORIGINS = get_env_list("CSRF_TRUSTED_ORIGINS", ("http://localhost",))
 
 WSGI_APPLICATION = 'app.wsgi.application'
 
