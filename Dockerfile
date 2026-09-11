@@ -16,4 +16,4 @@ COPY docker/start.sh /usr/local/bin/start
 RUN chmod +x /usr/local/bin/start
 
 ENTRYPOINT ["/usr/local/bin/start"]
-CMD ["sh", "-c", "uv run python project/manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
+CMD ["sh", "-c", "uv run gunicorn --chdir project --bind 0.0.0.0:8000 app.wsgi:application"]
